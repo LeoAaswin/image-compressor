@@ -4,6 +4,7 @@ import { ProcessedImage } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 interface ImageCardProps {
   image: ProcessedImage;
@@ -22,9 +23,11 @@ export function ImageCard({ image, onRemove }: ImageCardProps) {
         <X className="h-4 w-4" />
       </Button>
       <div className="aspect-square relative">
-        <img
+        <Image
           src={image.processedUrl || image.previewUrl}
           alt="Preview"
+          width={400}
+          height={400}
           className="object-cover w-full h-full"
         />
       </div>

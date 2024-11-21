@@ -42,12 +42,8 @@ export function ConversionProcessor() {
       await Promise.all(
         images.map(async (image) => {
           const options = {
-            maxSizeMB: 10,
-            maxWidthOrHeight: 1920,
-            useWebWorker: true,
-            fileType: IMAGE_FORMATS[outputFormat.toUpperCase()].mimeType,
+            fileType: IMAGE_FORMATS[outputFormat.toUpperCase() as keyof typeof IMAGE_FORMATS].mimeType,
           };
-
           const convertedFile = await imageCompression(
             image.originalFile,
             options
