@@ -2,7 +2,7 @@
 
 import { useDropzone } from "react-dropzone";
 import { Upload } from "lucide-react";
-import { SUPPORTED_FORMATS, MAX_FILE_SIZE } from "@/lib/constants";
+import { MAX_FILE_SIZE } from "@/lib/constants";
 
 interface DropzoneProps {
   onDrop: (acceptedFiles: File[]) => void;
@@ -12,7 +12,12 @@ export function Dropzone({ onDrop }: DropzoneProps) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': SUPPORTED_FORMATS,
+      'image/jpeg': [],
+      'image/png': [],
+      'image/webp': [],
+      'image/gif': [],
+      'image/bmp': [],
+      'image/tiff': [],
     },
     maxSize: MAX_FILE_SIZE,
   });
