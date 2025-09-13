@@ -7,8 +7,11 @@ import { Toaster } from '@/components/ui/sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Image Processor - Compress and Convert Images',
+  title: 'OptiPix - Compress and Convert Images',
   description: 'Professional image compression and format conversion tool',
+  icons: {
+    icon: './favicon.ico',
+  },
 };
 
 export default function RootLayout({
