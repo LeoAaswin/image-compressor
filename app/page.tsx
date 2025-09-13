@@ -9,7 +9,6 @@ import Image from "next/image";
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Enhanced Navigation */}
       <nav className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -31,7 +30,6 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -43,12 +41,11 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Compress and convert images with advanced memory management.
+              Compress, convert and edit images with advanced memory management.
               Handle large batches safely with our optimized processing engine.
             </p>
           </div>
 
-          {/* Enhanced Tabs */}
           <Tabs defaultValue="compress-optimized" className="space-y-8">
             <div className="flex justify-center">
               <TabsList className="grid w-full max-w-3xl grid-cols-3 lg:grid-cols-3 bg-muted/50 p-1">
@@ -96,12 +93,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Processing Counter */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <SimpleCounterDisplay />
       </div>
 
-      {/* Enhanced Footer */}
       <footer className="border-t bg-muted/30 mt-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -116,7 +111,7 @@ export default function Home() {
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                Professional image compression and conversion tool with advanced
+                Professional image compression, conversion and editor tool with advanced
                 memory management.
               </p>
             </div>
@@ -128,6 +123,7 @@ export default function Home() {
                 <li>• Multiple format support</li>
                 <li>• Real-time progress tracking</li>
                 <li>• Advanced compression algorithms</li>
+                <li>• Editor for image editing</li>
               </ul>
             </div>
 
@@ -137,7 +133,7 @@ export default function Home() {
                 <li>• Handles 500MB+ batches safely</li>
                 <li>• Queue-based processing</li>
                 <li>• Automatic memory cleanup</li>
-                <li>• Error recovery & reporting</li>
+                <li>• Editor for image editing</li>
               </ul>
             </div>
           </div>

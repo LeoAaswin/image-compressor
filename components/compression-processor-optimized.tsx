@@ -16,7 +16,7 @@ import { MemoryMonitor } from '@/components/memory-monitor';
 import { ProcessedImage } from '@/lib/types';
 import { MemoryManager, ProcessingQueue, formatFileSize, estimateMemoryUsage } from '@/lib/memory-utils';
 import { MAX_TOTAL_SIZE, MAX_CONCURRENT_PROCESSING, MEMORY_WARNING_THRESHOLD } from '@/lib/constants';
-import { SimpleCounter } from '@/lib/simple-counter';
+import { SupabaseCounter } from '@/lib/supabase';
 
 export function CompressionProcessorOptimized() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
@@ -166,7 +166,7 @@ export function CompressionProcessorOptimized() {
 
       // Update simple counter
       const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
-      SimpleCounter.updateCounts(processedCount, totalOriginalSize);
+      await SupabaseCounter.updateCounts(processedCount, totalOriginalSize);
 
       // Generate and download ZIP
       if (zipRef.current) {

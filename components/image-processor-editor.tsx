@@ -7,7 +7,7 @@ import { Dropzone } from '@/components/dropzone';
 import { ImageCardEnhanced } from '@/components/image-card-enhanced';
 import { ImageEditor } from '@/components/image-editor';
 import { ProcessedImage } from '@/lib/types';
-import { SimpleCounter } from '@/lib/simple-counter';
+import { SupabaseCounter } from '@/lib/supabase';
 import { Edit, Download, Trash2, Image as ImageIcon } from 'lucide-react';
 import JSZip from 'jszip';
 
@@ -161,7 +161,7 @@ export function ImageProcessorEditor() {
 
       // Update simple counter
       const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
-      SimpleCounter.updateCounts(images.length, totalOriginalSize);
+      await SupabaseCounter.updateCounts(images.length, totalOriginalSize);
 
       // Generate and download ZIP
       const content = await zipRef.current.generateAsync({ type: 'blob' });

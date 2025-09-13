@@ -10,7 +10,12 @@ export const metadata: Metadata = {
   title: 'OptiPix - Compress and Convert Images',
   description: 'Professional image compression and format conversion tool',
   icons: {
-    icon: './favicon.ico',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
   },
 };
 
