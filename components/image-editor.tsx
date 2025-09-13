@@ -221,7 +221,6 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
       }
     } catch (error) {
       toast.error('Error editing image');
-      console.error(error);
     }
   };
 
@@ -463,7 +462,6 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
                       }
                     } catch (error) {
                       toast.error('Error downloading image');
-                      console.error(error);
                     }
                   }}
                 >

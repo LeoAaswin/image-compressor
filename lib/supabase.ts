@@ -145,8 +145,6 @@ export class SupabaseCounter {
 
   // Real-time subscription for counter updates
   static subscribeToCounterUpdates(callback: (counts: ProcessingCounts) => void) {
-    console.log('Setting up real-time subscription...');
-    
     const subscription = supabase
       .channel('global_counter_changes')
       .on(
@@ -157,8 +155,6 @@ export class SupabaseCounter {
           table: 'global_counter'
         },
         (payload) => {
-          console.log('Real-time update received:', payload);
-          
           if (payload.new) {
             const newData = payload.new as DatabaseCounter;
             const counts: ProcessingCounts = {
@@ -171,10 +167,7 @@ export class SupabaseCounter {
         }
       )
       .subscribe((status) => {
-        console.log('Subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to real-time updates');
-        } else if (status === 'CHANNEL_ERROR') {
+        if (status === 'CHANNEL_ERROR') {
           console.error('Failed to subscribe to real-time updates');
         }
       });

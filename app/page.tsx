@@ -32,60 +32,85 @@ export default function Home() {
 
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center space-y-4 mb-8">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="text-center space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
               Optimize Your Images with
               <span className="block text-transparent bg-gradient-to-r from-primary to-primary/60 bg-clip-text">
                 Professional Tools
               </span>
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
               Compress, convert and edit images with advanced memory management.
               Handle large batches safely with our optimized processing engine.
             </p>
           </div>
 
-          <Tabs defaultValue="compress-optimized" className="space-y-8">
+          <Tabs defaultValue="compress-optimized" className="space-y-6">
             <div className="flex justify-center">
-              <TabsList className="grid w-full max-w-3xl grid-cols-3 lg:grid-cols-3 bg-muted/50 p-1">
+              <TabsList className="grid w-full max-w-4xl grid-cols-1 sm:grid-cols-3 bg-muted/50 p-1 h-auto gap-1 sm:gap-0">
                 <TabsTrigger
                   value="compress-optimized"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative py-3 px-4 text-sm sm:text-base min-h-[48px] touch-manipulation"
                 >
-                  <span className="hidden sm:inline">Image Compressor</span>
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
+                    <div className="w-5 h-5 sm:w-4 sm:h-4">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                      </svg>
+                    </div>
+                    <span className="font-medium">Compress</span>
+                  </div>
                 </TabsTrigger>
 
                 <TabsTrigger
                   value="convert-optimized"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative py-3 px-4 text-sm sm:text-base min-h-[48px] touch-manipulation"
                 >
-                  <span className="hidden sm:inline">Image Converter</span>
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
+                    <div className="w-5 h-5 sm:w-4 sm:h-4">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
+                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                        <circle cx="12" cy="13" r="3"/>
+                      </svg>
+                    </div>
+                    <span className="font-medium">Convert</span>
+                  </div>
                 </TabsTrigger>
 
                 <TabsTrigger
                   value="image-editor"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative py-3 px-4 text-sm sm:text-base min-h-[48px] touch-manipulation"
                 >
-                  <span className="hidden sm:inline">Image Editor</span>
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
+                    <div className="w-5 h-5 sm:w-4 sm:h-4">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
+                        <path d="M12 20h9"/>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                      </svg>
+                    </div>
+                    <span className="font-medium">Edit</span>
+                  </div>
                 </TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="compress-optimized" className="mt-0">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6">
+              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
                 <CompressionProcessorOptimized />
               </div>
             </TabsContent>
 
             <TabsContent value="convert-optimized" className="mt-0">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6">
+              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
                 <ConversionProcessorOptimized />
               </div>
             </TabsContent>
 
             <TabsContent value="image-editor" className="mt-0">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6">
+              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
                 <ImageProcessorEditor />
               </div>
             </TabsContent>
@@ -93,7 +118,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <SimpleCounterDisplay />
       </div>
 
