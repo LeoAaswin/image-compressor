@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompressionProcessorOptimized } from "@/components/compression-processor-optimized";
 import { ConversionProcessorOptimized } from "@/components/conversion-processor-optimized";
 import { ImageProcessorEditor } from "@/components/image-processor-editor";
+import { BackgroundRemovalProcessor } from "@/components/background-removal-processor";
 import { SimpleCounterDisplay } from "@/components/simple-counter-display";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Image from "next/image";
@@ -48,7 +49,7 @@ export default function Home() {
 
           <Tabs defaultValue="compress-optimized" className="space-y-6">
             <div className="flex justify-center">
-              <TabsList className="grid w-full max-w-4xl grid-cols-1 sm:grid-cols-3 bg-muted/50 p-1 h-auto gap-1 sm:gap-0">
+              <TabsList className="grid w-full max-w-4xl grid-cols-1 sm:grid-cols-4 bg-muted/50 p-1 h-auto gap-1 sm:gap-0">
                 <TabsTrigger
                   value="compress-optimized"
                   className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative py-3 px-4 text-sm sm:text-base min-h-[48px] touch-manipulation"
@@ -56,9 +57,9 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row items-center gap-2">
                     <div className="w-5 h-5 sm:w-4 sm:h-4">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
-                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                        <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
-                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        <polyline points="3.27,6.96 12,12.01 20.73,6.96" />
+                        <line x1="12" y1="22.08" x2="12" y2="12" />
                       </svg>
                     </div>
                     <span className="font-medium">Compress</span>
@@ -72,8 +73,8 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row items-center gap-2">
                     <div className="w-5 h-5 sm:w-4 sm:h-4">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
-                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-                        <circle cx="12" cy="13" r="3"/>
+                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                        <circle cx="12" cy="13" r="3" />
                       </svg>
                     </div>
                     <span className="font-medium">Convert</span>
@@ -87,11 +88,27 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row items-center gap-2">
                     <div className="w-5 h-5 sm:w-4 sm:h-4">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
-                        <path d="M12 20h9"/>
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                       </svg>
                     </div>
                     <span className="font-medium">Edit</span>
+                  </div>
+                </TabsTrigger>
+
+                <TabsTrigger
+                  value="remove-bg"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative py-3 px-4 text-sm sm:text-base min-h-[48px] touch-manipulation"
+                >
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
+                    <div className="w-5 h-5 sm:w-4 sm:h-4">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
+                        <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+                        <path d="M22 21H7" />
+                        <path d="m5 11 9 9" />
+                      </svg>
+                    </div>
+                    <span className="font-medium">Remove Bg</span>
                   </div>
                 </TabsTrigger>
               </TabsList>
@@ -112,6 +129,12 @@ export default function Home() {
             <TabsContent value="image-editor" className="mt-0">
               <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
                 <ImageProcessorEditor />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="remove-bg" className="mt-0">
+              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
+                <BackgroundRemovalProcessor />
               </div>
             </TabsContent>
           </Tabs>

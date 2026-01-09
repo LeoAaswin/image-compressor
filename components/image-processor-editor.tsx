@@ -7,7 +7,7 @@ import { Dropzone } from '@/components/dropzone';
 import { ImageCardEnhanced } from '@/components/image-card-enhanced';
 import { ImageEditor } from '@/components/image-editor';
 import { ProcessedImage } from '@/lib/types';
-import { SupabaseCounter } from '@/lib/supabase';
+
 import { Edit, Download, Trash2, Image as ImageIcon } from 'lucide-react';
 import JSZip from 'jszip';
 
@@ -71,19 +71,19 @@ export function ImageProcessorEditor() {
     }
 
     const editedPreviewUrl = URL.createObjectURL(editedImage);
-    
-    setImages((prev) => prev.map(img => 
-      img.id === editingImage.id 
+
+    setImages((prev) => prev.map(img =>
+      img.id === editingImage.id
         ? {
-            ...img,
-            originalFile: editedImage,
-            previewUrl: editedPreviewUrl,
-            processedUrl: null, // Clear processedUrl so preview shows
-            processedSize: editedImage.size,
-            status: 'edited' as const,
-            progress: 100,
-            editedFile: editedImage // Store the edited file
-          }
+          ...img,
+          originalFile: editedImage,
+          previewUrl: editedPreviewUrl,
+          processedUrl: null, // Clear processedUrl so preview shows
+          processedSize: editedImage.size,
+          status: 'edited' as const,
+          progress: 100,
+          editedFile: editedImage // Store the edited file
+        }
         : img
     ));
 
@@ -100,8 +100,8 @@ export function ImageProcessorEditor() {
     try {
       const processPromises = images.map(async (image, index) => {
         // Update status to processing
-        setImages(prev => prev.map(img => 
-          img.id === image.id 
+        setImages(prev => prev.map(img =>
+          img.id === image.id
             ? { ...img, status: 'processing' as const, progress: 0 }
             : img
         ));
@@ -109,7 +109,7 @@ export function ImageProcessorEditor() {
         try {
           // Simulate processing (you can add actual image processing here)
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           // Use the appropriate file based on status
           let fileToProcess: File;
           if (image.status === 'edited' && image.editedFile) {
@@ -118,40 +118,37 @@ export function ImageProcessorEditor() {
           } else {
             fileToProcess = image.originalFile;
           }
-          
+
           const processedUrl = URL.createObjectURL(fileToProcess);
-          
+
           // Add to ZIP with appropriate filename
           let zipFileName = fileToProcess.name;
           if (image.status === 'edited' && image.editedFile) {
-            const originalName = image.originalFile.name;
-            const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
-            const extension = originalName.substring(originalName.lastIndexOf('.'));
-            zipFileName = `${nameWithoutExt}_edited${extension}`;
+            zipFileName = image.originalFile.name;
           }
           zipRef.current.file(zipFileName, fileToProcess);
 
           // Update status to completed
-          setImages(prev => prev.map(img => 
-            img.id === image.id 
-              ? { 
-                  ...img, 
-                  status: 'completed' as const, 
-                  processedUrl,
-                  processedSize: fileToProcess.size,
-                  progress: 100
-                }
+          setImages(prev => prev.map(img =>
+            img.id === image.id
+              ? {
+                ...img,
+                status: 'completed' as const,
+                processedUrl,
+                processedSize: fileToProcess.size,
+                progress: 100
+              }
               : img
           ));
 
         } catch (error) {
-          setImages(prev => prev.map(img => 
-            img.id === image.id 
-              ? { 
-                  ...img, 
-                  status: 'error' as const, 
-                  error: 'Processing failed'
-                }
+          setImages(prev => prev.map(img =>
+            img.id === image.id
+              ? {
+                ...img,
+                status: 'error' as const,
+                error: 'Processing failed'
+              }
               : img
           ));
         }
@@ -159,20 +156,39 @@ export function ImageProcessorEditor() {
 
       await Promise.all(processPromises);
 
-      // Update simple counter
-      const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
-      await SupabaseCounter.updateCounts(images.length, totalOriginalSize);
+      // Update simple counter logic removed
+      // const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
+      // await SupabaseCounter.updateCounts(images.length, totalOriginalSize);
 
-      // Generate and download ZIP
-      const content = await zipRef.current.generateAsync({ type: 'blob' });
-      const downloadUrl = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = 'edited-images.zip';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(downloadUrl);
+      // Generate and download
+      if (images.length === 1 && zipRef.current) {
+        const zipFiles = Object.keys(zipRef.current.files);
+        if (zipFiles.length === 1) {
+          const filename = zipFiles[0];
+          const content = await zipRef.current.file(filename)?.async('blob');
+          if (content) {
+            const downloadUrl = URL.createObjectURL(content); // Use generic URL here as MemoryManager isn't used in this file mostly
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(downloadUrl);
+          }
+        }
+      } else {
+        // Generate and download ZIP
+        const content = await zipRef.current.generateAsync({ type: 'blob' });
+        const downloadUrl = URL.createObjectURL(content);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = 'edited-images.zip';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(downloadUrl);
+      }
 
       toast.success('All images processed and downloaded!');
     } catch (error) {
@@ -191,11 +207,11 @@ export function ImageProcessorEditor() {
       editedFileSize: image.editedFile?.size,
       originalFileSize: image.originalFile.size
     });
-    
+
     // For edited images, use the editedFile if available, otherwise previewUrl
     // For other images, use processedUrl if available, otherwise previewUrl
     let fileToDownload: string;
-    
+
     if (image.status === 'edited' && image.editedFile) {
       // Create a new URL for the edited file
       fileToDownload = URL.createObjectURL(image.editedFile);
@@ -204,28 +220,24 @@ export function ImageProcessorEditor() {
       fileToDownload = image.processedUrl || image.previewUrl;
       console.log('Using original file for download');
     }
-    
+
     const link = document.createElement('a');
     link.href = fileToDownload;
-    
+
     // Create a filename that indicates it's edited
     const originalName = image.originalFile.name;
-    const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
-    const extension = originalName.substring(originalName.lastIndexOf('.'));
-    const editedFileName = image.status === 'edited' 
-      ? `${nameWithoutExt}_edited${extension}`
-      : originalName;
-    
+    const editedFileName = originalName;
+
     link.download = editedFileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     // Clean up the URL if we created it
     if (image.status === 'edited' && image.editedFile) {
       URL.revokeObjectURL(fileToDownload);
     }
-    
+
     toast.success('Image downloaded successfully!');
   }, []);
 

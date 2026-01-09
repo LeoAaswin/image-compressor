@@ -16,7 +16,7 @@ import { MemoryMonitor } from '@/components/memory-monitor';
 import { ProcessedImage } from '@/lib/types';
 import { MemoryManager, ProcessingQueue, formatFileSize, estimateMemoryUsage } from '@/lib/memory-utils';
 import { MAX_TOTAL_SIZE, MAX_CONCURRENT_PROCESSING, MEMORY_WARNING_THRESHOLD } from '@/lib/constants';
-import { SupabaseCounter } from '@/lib/supabase';
+
 
 export function CompressionProcessorOptimized() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
@@ -48,7 +48,7 @@ export function CompressionProcessorOptimized() {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const totalSize = acceptedFiles.reduce((sum, file) => sum + file.size, 0);
     const currentTotalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
-    
+
     if (totalSize + currentTotalSize > MAX_TOTAL_SIZE) {
       toast.error(`Total batch size exceeds ${formatFileSize(MAX_TOTAL_SIZE)} limit`);
       return;
@@ -93,7 +93,7 @@ export function CompressionProcessorOptimized() {
 
     try {
       // Process images in queue to limit memory usage
-      const processPromises = images.map((image) => 
+      const processPromises = images.map((image) =>
         processingQueue.current.add(async () => {
           // Update status to processing
           setImages((prev) =>
@@ -121,12 +121,12 @@ export function CompressionProcessorOptimized() {
               prev.map((img) =>
                 img.id === image.id
                   ? {
-                      ...img,
-                      processedUrl,
-                      processedSize: compressedFile.size,
-                      progress: 100,
-                      status: 'completed',
-                    }
+                    ...img,
+                    processedUrl,
+                    processedSize: compressedFile.size,
+                    progress: 100,
+                    status: 'completed',
+                  }
                   : img
               )
             );
@@ -139,7 +139,7 @@ export function CompressionProcessorOptimized() {
             }
 
             processedCount++;
-            
+
             // Cleanup old preview URLs if memory usage is high
             if (MemoryManager.isMemoryLimitReached()) {
               MemoryManager.cleanupOldestUrls(3);
@@ -150,10 +150,10 @@ export function CompressionProcessorOptimized() {
               prev.map((img) =>
                 img.id === image.id
                   ? {
-                      ...img,
-                      status: 'error',
-                      error: error instanceof Error ? error.message : 'Processing failed',
-                    }
+                    ...img,
+                    status: 'error',
+                    error: error instanceof Error ? error.message : 'Processing failed',
+                  }
                   : img
               )
             );
@@ -164,12 +164,34 @@ export function CompressionProcessorOptimized() {
 
       await Promise.all(processPromises);
 
-      // Update simple counter
-      const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
-      await SupabaseCounter.updateCounts(processedCount, totalOriginalSize);
+      // Update simple counter logic removed
+      // const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
+      // await SupabaseCounter.updateCounts(processedCount, totalOriginalSize);
 
-      // Generate and download ZIP
-      if (zipRef.current) {
+      // Generate and download
+      if (images.length === 1 && processedCount === 1) {
+        // Single file download
+        const link = document.createElement('a');
+        // BETTER APPROACH:
+        // We already have the compressedFile inside the loop. But we cant access it here easily.
+        // Let's grab the blob from the zip since we added it there!
+        if (zipRef.current) {
+          const zipFiles = Object.keys(zipRef.current.files);
+          if (zipFiles.length === 1) {
+            const filename = zipFiles[0];
+            const content = await zipRef.current.file(filename)?.async('blob');
+            if (content) {
+              const downloadUrl = MemoryManager.createObjectURL(content);
+              link.href = downloadUrl;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 1000);
+            }
+          }
+        }
+      } else if (zipRef.current && processedCount > 0) {
         const content = await zipRef.current.generateAsync({ type: 'blob' });
         const downloadUrl = MemoryManager.createObjectURL(content);
         const link = document.createElement('a');
@@ -178,7 +200,7 @@ export function CompressionProcessorOptimized() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Cleanup download URL
         setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 1000);
       }
@@ -217,7 +239,7 @@ export function CompressionProcessorOptimized() {
       </div>
 
       {/* Enhanced Memory Monitor */}
-      <MemoryMonitor 
+      <MemoryMonitor
         memoryUsage={memoryUsage}
         showWarning={showMemoryWarning}
         processingCount={images.filter(img => img.status === 'processing').length}

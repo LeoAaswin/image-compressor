@@ -5,6 +5,8 @@ export const IMAGE_FORMATS = {
   GIF: { id: 'gif', label: 'GIF', mimeType: 'image/gif' },
   BMP: { id: 'bmp', label: 'BMP', mimeType: 'image/bmp' },
   TIFF: { id: 'tiff', label: 'TIFF', mimeType: 'image/tiff' },
+  AVIF: { id: 'avif', label: 'AVIF', mimeType: 'image/avif' },
+  ICO: { id: 'ico', label: 'ICO', mimeType: 'image/x-icon' },
 };
 
 export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB

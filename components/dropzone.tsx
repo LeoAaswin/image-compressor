@@ -24,6 +24,8 @@ export function Dropzone({ onDrop }: DropzoneProps) {
         "image/gif": [".gif"],
         "image/bmp": [".bmp"],
         "image/tiff": [".tiff", ".tif"],
+        "image/avif": [".avif"],
+        "image/x-icon": [".ico"],
       },
       maxSize: MAX_FILE_SIZE,
       multiple: true,
@@ -49,10 +51,9 @@ export function Dropzone({ onDrop }: DropzoneProps) {
         className={`
           relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer 
           transition-all duration-300 ease-in-out transform
-          ${
-            isDragActive
-              ? "border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-primary/20"
-              : isHovered
+          ${isDragActive
+            ? "border-primary bg-primary/10 scale-[1.02] shadow-lg shadow-primary/20"
+            : isHovered
               ? "border-primary/50 bg-primary/5 scale-[1.01]"
               : "border-muted-foreground/25 hover:border-muted-foreground/40"
           }
@@ -66,11 +67,10 @@ export function Dropzone({ onDrop }: DropzoneProps) {
         <div
           className={`
           absolute inset-0 rounded-xl transition-all duration-300
-          ${
-            isDragActive
+          ${isDragActive
               ? "ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
               : ""
-          }
+            }
         `}
         />
 
@@ -82,13 +82,12 @@ export function Dropzone({ onDrop }: DropzoneProps) {
             className={`
             w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center
             transition-all duration-300
-            ${
-              isDragActive
+            ${isDragActive
                 ? "bg-primary/20 scale-110"
                 : isHovered
-                ? "bg-primary/10 scale-105"
-                : "bg-muted/50"
-            }
+                  ? "bg-primary/10 scale-105"
+                  : "bg-muted/50"
+              }
           `}
           >
             {isDragActive ? (
@@ -124,7 +123,7 @@ export function Dropzone({ onDrop }: DropzoneProps) {
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <span className="flex items-center gap-1">
                 <FileImage className="w-4 h-4" />
-                JPEG, PNG, WEBP, GIF, BMP, TIFF
+                JPEG, PNG, WEBP, GIF, BMP, TIFF, AVIF, ICO
               </span>
               <span className="text-muted-foreground/60">•</span>
               <span>Max {formatSize(MAX_FILE_SIZE)} per file</span>
