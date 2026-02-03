@@ -3,202 +3,177 @@ import { CompressionProcessorOptimized } from "@/components/compression-processo
 import { ConversionProcessorOptimized } from "@/components/conversion-processor-optimized";
 import { ImageProcessorEditor } from "@/components/image-processor-editor";
 import { BackgroundRemovalProcessor } from "@/components/background-removal-processor";
-import { SimpleCounterDisplay } from "@/components/simple-counter-display";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { FaviconGenerator } from "@/components/favicon-generator";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <nav className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <div className="w-14 h-14 rounded-lg flex items-center justify-center">
-                <Image
-                  src="/camera.png"
-                  alt="OptiPix"
-                  width={32}
-                  height={32}
-                  className="w-full h-full"
-                />
-              </div>
-              <div className="leading-tight ml-1">
-                <h1 className="text-2xl font-bold tracking-tight">
-                  Opti<span className="text-primary">Pix</span>
-                </h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-            </div>
-          </div>
+    <div className="relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5"></div>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="text-center space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
+            Optimize Your Images with
+            <span className="block text-transparent bg-gradient-to-r from-primary to-primary/60 bg-clip-text">
+              Professional Tools
+            </span>
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
+            Compress, convert, edit images and generate favicons with advanced
+            memory management. Handle large batches safely with our optimized
+            processing engine.
+          </p>
         </div>
-      </nav>
 
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-          <div className="text-center space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
-              Optimize Your Images with
-              <span className="block text-transparent bg-gradient-to-r from-primary to-primary/60 bg-clip-text">
-                Professional Tools
-              </span>
-            </h2>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
-              Compress, convert and edit images with advanced memory management.
-              Handle large batches safely with our optimized processing engine.
-            </p>
-          </div>
-
-          <Tabs defaultValue="compress-optimized" className="space-y-6">
-            <div className="flex justify-center">
-              <TabsList className="grid w-full max-w-4xl grid-cols-1 sm:grid-cols-4 bg-muted/50 p-1 h-auto gap-1 sm:gap-0">
-                <TabsTrigger
-                  value="compress-optimized"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative py-3 px-4 text-sm sm:text-base min-h-[48px] touch-manipulation"
-                >
-                  <div className="flex flex-col sm:flex-row items-center gap-2">
-                    <div className="w-5 h-5 sm:w-4 sm:h-4">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
-                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                        <polyline points="3.27,6.96 12,12.01 20.73,6.96" />
-                        <line x1="12" y1="22.08" x2="12" y2="12" />
-                      </svg>
-                    </div>
-                    <span className="font-medium">Compress</span>
-                  </div>
-                </TabsTrigger>
-
-                <TabsTrigger
-                  value="convert-optimized"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative py-3 px-4 text-sm sm:text-base min-h-[48px] touch-manipulation"
-                >
-                  <div className="flex flex-col sm:flex-row items-center gap-2">
-                    <div className="w-5 h-5 sm:w-4 sm:h-4">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
-                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                        <circle cx="12" cy="13" r="3" />
-                      </svg>
-                    </div>
-                    <span className="font-medium">Convert</span>
-                  </div>
-                </TabsTrigger>
-
-                <TabsTrigger
-                  value="image-editor"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative py-3 px-4 text-sm sm:text-base min-h-[48px] touch-manipulation"
-                >
-                  <div className="flex flex-col sm:flex-row items-center gap-2">
-                    <div className="w-5 h-5 sm:w-4 sm:h-4">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                      </svg>
-                    </div>
-                    <span className="font-medium">Edit</span>
-                  </div>
-                </TabsTrigger>
-
-                <TabsTrigger
-                  value="remove-bg"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm relative py-3 px-4 text-sm sm:text-base min-h-[48px] touch-manipulation"
-                >
-                  <div className="flex flex-col sm:flex-row items-center gap-2">
-                    <div className="w-5 h-5 sm:w-4 sm:h-4">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-full h-full">
-                        <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
-                        <path d="M22 21H7" />
-                        <path d="m5 11 9 9" />
-                      </svg>
-                    </div>
-                    <span className="font-medium">Remove Bg</span>
-                  </div>
-                </TabsTrigger>
-              </TabsList>
+        {/* Tools Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <Link href="/compress" className="group">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="w-6 h-6"
+                  >
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    <polyline points="3.27,6.96 12,12.01 20.73,6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Image Compressor</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Reduce file size while maintaining quality
+                  </p>
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                • Batch processing • Memory safe • Multiple formats
+              </div>
             </div>
+          </Link>
 
-            <TabsContent value="compress-optimized" className="mt-0">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
-                <CompressionProcessorOptimized />
+          <Link href="/convert" className="group">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="w-6 h-6"
+                  >
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                    <circle cx="12" cy="13" r="3" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Format Converter</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Convert between image formats
+                  </p>
+                </div>
               </div>
-            </TabsContent>
+              <div className="text-sm text-muted-foreground">
+                • JPEG, PNG, WebP • GIF, BMP • Batch conversion
+              </div>
+            </div>
+          </Link>
 
-            <TabsContent value="convert-optimized" className="mt-0">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
-                <ConversionProcessorOptimized />
+          <Link href="/edit" className="group">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="w-6 h-6"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Image Editor</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Edit and enhance images
+                  </p>
+                </div>
               </div>
-            </TabsContent>
+              <div className="text-sm text-muted-foreground">
+                • Crop & rotate • Filters • Adjustments
+              </div>
+            </div>
+          </Link>
 
-            <TabsContent value="image-editor" className="mt-0">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
-                <ImageProcessorEditor />
+          <Link href="/remove-background" className="group">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="w-6 h-6"
+                  >
+                    <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+                    <path d="M22 21H7" />
+                    <path d="m5 11 9 9" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Background Remover</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Remove backgrounds instantly
+                  </p>
+                </div>
               </div>
-            </TabsContent>
+              <div className="text-sm text-muted-foreground">
+                • AI-powered • Instant results • High quality
+              </div>
+            </div>
+          </Link>
 
-            <TabsContent value="remove-bg" className="mt-0">
-              <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
-                <BackgroundRemovalProcessor />
+          <Link href="/favicon-generator" className="group">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="w-6 h-6"
+                  >
+                    <path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
+                    <rect x="6" y="6" width="4" height="4" />
+                    <rect x="14" y="6" width="4" height="4" />
+                    <rect x="6" y="14" width="4" height="4" />
+                    <rect x="14" y="14" width="4" height="4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Favicon Generator</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create favicons for all platforms
+                  </p>
+                </div>
               </div>
-            </TabsContent>
-          </Tabs>
+              <div className="text-sm text-muted-foreground">
+                • All sizes • HTML code • ZIP download
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <SimpleCounterDisplay />
-      </div>
-
-      <footer className="border-t bg-muted/30 mt-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2 h-24 w-24">
-                <Image
-                  src="/camera.png"
-                  alt="OptiPix"
-                  width={32}
-                  height={32}
-                  className="object-contain h-full w-full"
-                />
-                <h1 className="text-2xl font-bold tracking-tight leading-tight">Opti<br/><span className="text-primary">Pix</span></h1>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Professional image compression, conversion and editor tool with advanced
-                memory management.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="font-semibold">Features</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>• Memory-safe batch processing</li>
-                <li>• Multiple format support</li>
-                <li>• Real-time progress tracking</li>
-                <li>• Advanced compression algorithms</li>
-                <li>• Editor for image editing</li>
-              </ul>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="font-semibold">Optimized Processing</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>• Handles 500MB+ batches safely</li>
-                <li>• Queue-based processing</li>
-                <li>• Automatic memory cleanup</li>
-                <li>• Editor for image editing</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t mt-8 pt-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              © 2024 OptiPix. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
-    </main>
+    </div>
   );
 }

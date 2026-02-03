@@ -4,6 +4,9 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { JsonLd } from '@/components/json-ld';
+import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
+import { SimpleCounterDisplay } from '@/components/simple-counter-display';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -83,7 +86,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+              <SimpleCounterDisplay />
+            </div>
+            <Footer />
+          </div>
           <Toaster />
           <JsonLd />
         </ThemeProvider>
