@@ -104,17 +104,34 @@ export function ConversionProcessorOptimized() {
           );
 
           try {
-            const options = {
-              fileType: IMAGE_FORMATS[outputFormat.toUpperCase() as keyof typeof IMAGE_FORMATS].mimeType,
-              maxSizeMB: 10,
-              maxWidthOrHeight: 1920,
-              useWebWorker: true,
-            };
+            let convertedFile: File;
+            const baseName = image.originalFile.name.split('.')[0];
 
-            const convertedFile = await imageCompression(
-              image.originalFile,
-              options
-            );
+            // Handle SVG conversion separately since it's vector-based
+            if (outputFormat === 'svg') {
+              // Convert TO SVG - create SVG from raster image
+              if (image.originalFile.type.startsWith('image/')) {
+                convertedFile = await convertToSvg(image.originalFile);
+              } else {
+                throw new Error('Cannot convert this file type to SVG');
+              }
+            } else if (image.originalFile.type === 'image/svg+xml') {
+              // Convert FROM SVG to other formats
+              convertedFile = await convertFromSvg(image.originalFile, outputFormat);
+            } else {
+              // Regular image conversion
+              const options = {
+                fileType: IMAGE_FORMATS[outputFormat.toUpperCase() as keyof typeof IMAGE_FORMATS].mimeType,
+                maxSizeMB: 10,
+                maxWidthOrHeight: 1920,
+                useWebWorker: true,
+              };
+
+              convertedFile = await imageCompression(
+                image.originalFile,
+                options
+              );
+            }
 
             const processedUrl = MemoryManager.createObjectURL(convertedFile);
 
@@ -122,19 +139,18 @@ export function ConversionProcessorOptimized() {
               prev.map((img) =>
                 img.id === image.id
                   ? {
-                    ...img,
-                    processedUrl,
-                    processedSize: convertedFile.size,
-                    progress: 100,
-                    status: 'completed',
-                  }
+                      ...img,
+                      processedUrl,
+                      processedSize: convertedFile.size,
+                      progress: 100,
+                      status: 'completed',
+                    }
                   : img
               )
             );
 
             // Add to ZIP
             if (zipRef.current) {
-              const baseName = image.originalFile.name.split('.')[0];
               zipRef.current.file(`${baseName}.${outputFormat}`, convertedFile);
             }
 
@@ -151,10 +167,10 @@ export function ConversionProcessorOptimized() {
               prev.map((img) =>
                 img.id === image.id
                   ? {
-                    ...img,
-                    status: 'error',
-                    error: error instanceof Error ? error.message : 'Conversion failed',
-                  }
+                      ...img,
+                      status: 'error',
+                      error: error instanceof Error ? error.message : 'Conversion failed',
+                    }
                   : img
               )
             );
@@ -164,10 +180,6 @@ export function ConversionProcessorOptimized() {
       );
 
       await Promise.all(processPromises);
-
-      // Update simple counter logic removed
-      // const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
-      // await SupabaseCounter.updateCounts(processedCount, totalOriginalSize);
 
       // Generate and download
       if (images.length === 1 && processedCount === 1) {
@@ -214,6 +226,100 @@ export function ConversionProcessorOptimized() {
       setProcessing(false);
       zipRef.current = null;
     }
+  };
+
+  // Helper function to convert raster images to SVG
+  const convertToSvg = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Use natural dimensions for better accuracy
+        const width = img.naturalWidth || img.width;
+        const height = img.naturalHeight || img.height;
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Create SVG with embedded image and proper dimensions
+        const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+  <image href="${canvas.toDataURL('image/png', 1.0)}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"/>
+</svg>`;
+
+        const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+        const svgFile = new File([blob], `${file.name.split('.')[0]}.svg`, { type: 'image/svg+xml' });
+        resolve(svgFile);
+      };
+
+      img.onerror = () => reject(new Error('Failed to load image for SVG conversion'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Helper function to convert SVG to other formats
+  const convertFromSvg = async (svgFile: File, targetFormat: string): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      // First, parse SVG to get actual dimensions
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const svgText = e.target?.result as string;
+        
+        // Extract dimensions from SVG
+        const widthMatch = svgText.match(/width="([^"]+)"/);
+        const heightMatch = svgText.match(/height="([^"]+)"/);
+        const viewBoxMatch = svgText.match(/viewBox="([^"]+)"/);
+        
+        let svgWidth = 800; // fallback
+        let svgHeight = 600; // fallback
+        
+        if (widthMatch && heightMatch) {
+          svgWidth = parseInt(widthMatch[1]) || 800;
+          svgHeight = parseInt(heightMatch[1]) || 600;
+        } else if (viewBoxMatch) {
+          const values = viewBoxMatch[1].split(' ');
+          svgWidth = parseInt(values[2]) || 800;
+          svgHeight = parseInt(values[3]) || 600;
+        }
+
+        img.onload = () => {
+          canvas.width = svgWidth;
+          canvas.height = svgHeight;
+          
+          // Set high quality rendering
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+          }
+          
+          ctx?.drawImage(img, 0, 0, svgWidth, svgHeight);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const convertedFile = new File([blob], `${svgFile.name.split('.')[0]}.${targetFormat}`, {
+                type: IMAGE_FORMATS[targetFormat.toUpperCase() as keyof typeof IMAGE_FORMATS].mimeType,
+              });
+              resolve(convertedFile);
+            } else {
+              reject(new Error('Failed to convert SVG'));
+            }
+          }, IMAGE_FORMATS[targetFormat.toUpperCase() as keyof typeof IMAGE_FORMATS].mimeType, 0.95);
+        };
+
+        img.onerror = () => reject(new Error('Failed to load SVG for conversion'));
+        img.src = URL.createObjectURL(svgFile);
+      };
+
+      reader.onerror = () => reject(new Error('Failed to read SVG file'));
+      reader.readAsText(svgFile);
+    });
   };
 
   const clearAllImages = useCallback(() => {

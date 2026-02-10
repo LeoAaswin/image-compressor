@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     default: 'OptiPix - Free Image Compressor, Converter & Background Remover',
     template: '%s | OptiPix',
   },
-  description: 'Professional tool to compress images, convert formats (JPG, PNG, WEBP, AVIF, ICO), and automatically remove backgrounds. Free, fast, and privacy-focused.',
+  description: 'Professional tool to compress images, convert formats (JPG, PNG, WEBP, AVIF, ICO, SVG), and automatically remove backgrounds. Free, fast, and privacy-focused.',
   keywords: [
     'image compressor', 'compress jpeg', 'compress png', 'image converter',
     'convert to webp', 'convert to avif', 'remove background', 'background remover',
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
   authors: [{ name: 'OptiPix Team' }],
   creator: 'OptiPix',
   publisher: 'OptiPix',
-  metadataBase: new URL('https://optipix.vercel.app'),
+  metadataBase: new URL('https://optipix.dhakalasmin.com.np'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'OptiPix - Ultimate Image Optimization Tool',
     description: 'Compress, convert, and edit images locally in your browser. No file upload limits, privacy-first processing.',
-    url: 'https://optipix.vercel.app',
+    url: 'https://optipix.dhakalasmin.com.np',
     siteName: 'OptiPix',
     images: [
       {
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.icon', type: 'image/x-icon' },
+      { url: '/favicon.ico', type: 'image/x-icon' },
     ],
     shortcut: '/favicon.ico',
     apple: '/apple-touch-icon.png',

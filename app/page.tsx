@@ -1,10 +1,3 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CompressionProcessorOptimized } from "@/components/compression-processor-optimized";
-import { ConversionProcessorOptimized } from "@/components/conversion-processor-optimized";
-import { ImageProcessorEditor } from "@/components/image-processor-editor";
-import { BackgroundRemovalProcessor } from "@/components/background-removal-processor";
-import { FaviconGenerator } from "@/components/favicon-generator";
-import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {

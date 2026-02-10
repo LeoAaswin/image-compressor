@@ -26,6 +26,7 @@ export function Dropzone({ onDrop }: DropzoneProps) {
         "image/tiff": [".tiff", ".tif"],
         "image/avif": [".avif"],
         "image/x-icon": [".ico"],
+        "image/svg+xml": [".svg"],
       },
       maxSize: MAX_FILE_SIZE,
       multiple: true,
@@ -123,7 +124,7 @@ export function Dropzone({ onDrop }: DropzoneProps) {
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <span className="flex items-center gap-1">
                 <FileImage className="w-4 h-4" />
-                JPEG, PNG, WEBP, GIF, BMP, TIFF, AVIF, ICO
+                JPEG, PNG, WEBP, GIF, BMP, TIFF, AVIF, ICO, SVG
               </span>
               <span className="text-muted-foreground/60">•</span>
               <span>Max {formatSize(MAX_FILE_SIZE)} per file</span>
