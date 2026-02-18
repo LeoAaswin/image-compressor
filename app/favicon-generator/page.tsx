@@ -1,4 +1,4 @@
-import { FaviconGenerator } from "@/components/favicon-generator";
+import { FaviconGenerator } from "@/components/favicon/FaviconGenerator";
 
 export default function FaviconGeneratorPage() {
   return (
