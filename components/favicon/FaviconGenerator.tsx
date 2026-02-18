@@ -6,7 +6,6 @@ import { ImageModePanel } from './ImageModePanel';
 import { TextModePanel } from './TextModePanel';
 import { FaviconGrid } from './FaviconGrid';
 import { HTMLGuide } from './HTMLGuide';
-import { BrowserPreview } from './BrowserPreview';
 import { useFaviconGenerator } from './hooks/useFaviconGenerator';
 
 function downloadFile(url: string, filename: string) {
@@ -85,14 +84,6 @@ export function FaviconGenerator() {
         onDownloadAll={downloadAllFavicons}
         onCopyHTML={copyHTMLCode}
       />
-
-      {generatedFavicons.length > 0 && (
-        <BrowserPreview 
-          favicons={generatedFavicons}
-          standardIco={standardIco}
-          title="Your Website"
-        />
-      )}
 
       {generatedFavicons.length > 0 && (
         <HTMLGuide 

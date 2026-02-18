@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop, convertToPixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { RotateCcw, Download, X, Save, ZoomIn, RotateCw } from 'lucide-react';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface ImageEditorProps {
   image: File;
@@ -55,26 +56,61 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [imgSrc, setImgSrc] = useState(URL.createObjectURL(image));
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   // Initialize crop on load
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
+    setImageDimensions({ width, height }); // Store actual dimensions
     setZoom(1); // Reset zoom
-    const crop = centerCrop(
-      makeAspectCrop(
-        {
-          unit: '%',
-          width: 90,
-        },
-        aspect || width / height,
-        width,
-        height
-      ),
+    
+    // Create percent crop first
+    const percentCrop = makeAspectCrop(
+      {
+        unit: '%',
+        width: 90,
+      },
+      aspect || width / height,
       width,
-      height
+      height,
     );
-    setCrop(crop);
+    
+    // Convert to pixel crop using ReactCrop's convertToPixelCrop
+    const pixelCrop = convertToPixelCrop(
+      percentCrop,
+      width,
+      height,
+    );
+    
+    setCrop(pixelCrop);
+    setCompletedCrop(pixelCrop);
+    setOutputWidth(Math.round(width));
+    setOutputHeight(Math.round(height));
   }, [aspect]);
+
+  // Auto-create crop based on width/height input
+  const createCropFromDimensions = useCallback(() => {
+    if (imageDimensions.width && imageDimensions.height && outputWidth && outputHeight) {
+      // Calculate percent crop based on desired output dimensions
+      const percentWidth = (outputWidth / imageDimensions.width) * 100;
+      const percentHeight = (outputHeight / imageDimensions.height) * 100;
+      
+      // Center the crop
+      const percentX = (100 - percentWidth) / 2;
+      const percentY = (100 - percentHeight) / 2;
+      
+      const pixelCrop: PixelCrop = {
+        unit: 'px',
+        x: (percentX / 100) * imageDimensions.width,
+        y: (percentY / 100) * imageDimensions.height,
+        width: (percentWidth / 100) * imageDimensions.width,
+        height: (percentHeight / 100) * imageDimensions.height,
+      };
+      
+      setCrop(pixelCrop);
+      setCompletedCrop(pixelCrop);
+    }
+  }, [imageDimensions, outputWidth, outputHeight]);
 
   // Handle Preset Selection
   const handlePresetSelect = (presetName: string) => {
@@ -434,7 +470,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
         }
       }, 'image/jpeg', 0.95);
     });
-  }, [completedCrop, outputWidth, outputHeight, rotate]); // Removed zoom dependency
+  }, [completedCrop, outputWidth, outputHeight, rotate, zoom]); // Removed zoom dependency
 
   const handleSave = async (download: boolean = false) => {
     try {
@@ -494,12 +530,15 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
                 minWidth={50}
                 minHeight={50}
                 className="max-h-[60vh]"
+                keepSelection
               >
-                <img
+                <Image
                   ref={imgRef}
                   alt="Edit preview"
                   src={imgSrc}
                   onLoad={onImageLoad}
+                  width={imageDimensions.width || 2000}
+                  height={imageDimensions.height || 2000}
                   style={{
                     transform: `rotate(${rotate}deg)`,
                     maxHeight: '60vh',
@@ -580,6 +619,22 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
                     placeholder="Auto"
                   />
                 </div>
+              </div>
+
+              {/* Apply Crop Button */}
+              <div className="space-y-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={createCropFromDimensions}
+                  disabled={!outputWidth || !outputHeight}
+                  className="w-full"
+                >
+                  Apply Crop Dimensions
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Enter width/height and click apply to auto-create crop box
+                </p>
               </div>
             </div>
 

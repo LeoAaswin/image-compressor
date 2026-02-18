@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useCallback, useRef } from 'react';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Dropzone } from '@/components/dropzone';
-import { ImageCardEnhanced } from '@/components/image-card-enhanced';
-import { ImageEditor } from '@/components/image-editor';
-import { ProcessedImage } from '@/lib/types';
+import { useState, useCallback, useRef } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Dropzone } from "@/components/dropzone";
+import { ImageCardEnhanced } from "@/components/image-card-enhanced";
+import { ImageEditor } from "@/components/image-editor";
+import { ProcessedImage } from "@/lib/types";
 
-import { Edit, Download, Trash2, Image as ImageIcon } from 'lucide-react';
-import JSZip from 'jszip';
+import { Edit, Download, Trash2, Image as ImageIcon } from "lucide-react";
+import JSZip from "jszip";
 
 export function ImageProcessorEditor() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
@@ -25,71 +25,60 @@ export function ImageProcessorEditor() {
       processedUrl: null,
       processedSize: 0,
       progress: 0,
-      status: 'pending' as const,
+      status: "pending" as const,
     }));
 
     setImages((prev) => [...prev, ...newImages]);
   }, []);
 
   const removeImage = useCallback((id: string) => {
-    console.log('Removing image with id:', id);
     setImages((prev) => {
-      const image = prev.find(img => img.id === id);
+      const image = prev.find((img) => img.id === id);
       if (image) {
         URL.revokeObjectURL(image.previewUrl);
-        if (image.processedUrl) {
-          URL.revokeObjectURL(image.processedUrl);
-        }
-        if (image.editedFile) {
-          // Clean up edited file URL if it exists
-          URL.revokeObjectURL(URL.createObjectURL(image.editedFile));
-        }
+        if (image.processedUrl) URL.revokeObjectURL(image.processedUrl);
       }
-      return prev.filter(img => img.id !== id);
+      return prev.filter((img) => img.id !== id);
     });
-    toast.success('Image removed successfully!');
+    toast.success("Image removed successfully!");
   }, []);
 
   const openEditor = useCallback((image: ProcessedImage) => {
     setEditingImage(image);
   }, []);
 
-  const handleEditSave = useCallback((editedImage: File) => {
-    if (!editingImage) return;
+  const handleEditSave = useCallback(
+    (editedImage: File) => {
+      if (!editingImage) return;
 
-    console.log('Saving edited image:', {
-      originalSize: editingImage.originalFile.size,
-      editedSize: editedImage.size,
-      originalName: editingImage.originalFile.name,
-      editedName: editedImage.name
-    });
+      URL.revokeObjectURL(editingImage.previewUrl);
+      if (editingImage.processedUrl)
+        URL.revokeObjectURL(editingImage.processedUrl);
 
-    // Clean up old URLs
-    URL.revokeObjectURL(editingImage.previewUrl);
-    if (editingImage.processedUrl) {
-      URL.revokeObjectURL(editingImage.processedUrl);
-    }
+      const editedPreviewUrl = URL.createObjectURL(editedImage);
 
-    const editedPreviewUrl = URL.createObjectURL(editedImage);
+      setImages((prev) =>
+        prev.map((img) =>
+          img.id === editingImage.id
+            ? {
+                ...img,
+                originalFile: editedImage,
+                previewUrl: editedPreviewUrl,
+                processedUrl: null,
+                processedSize: editedImage.size,
+                status: "edited" as const,
+                progress: 100,
+                editedFile: editedImage,
+              }
+            : img,
+        ),
+      );
 
-    setImages((prev) => prev.map(img =>
-      img.id === editingImage.id
-        ? {
-          ...img,
-          originalFile: editedImage,
-          previewUrl: editedPreviewUrl,
-          processedUrl: null, // Clear processedUrl so preview shows
-          processedSize: editedImage.size,
-          status: 'edited' as const,
-          progress: 100,
-          editedFile: editedImage // Store the edited file
-        }
-        : img
-    ));
-
-    setEditingImage(null);
-    toast.success('Image edited and saved successfully!');
-  }, [editingImage]);
+      setEditingImage(null);
+      toast.success("Image edited and saved successfully!");
+    },
+    [editingImage],
+  );
 
   const processAllImages = async () => {
     if (images.length === 0) return;
@@ -98,77 +87,65 @@ export function ImageProcessorEditor() {
     zipRef.current = new JSZip();
 
     try {
-      const processPromises = images.map(async (image, index) => {
-        // Update status to processing
-        setImages(prev => prev.map(img =>
-          img.id === image.id
-            ? { ...img, status: 'processing' as const, progress: 0 }
-            : img
-        ));
+      const processPromises = images.map(async (image) => {
+        setImages((prev) =>
+          prev.map((img) =>
+            img.id === image.id
+              ? { ...img, status: "processing" as const, progress: 0 }
+              : img,
+          ),
+        );
 
         try {
-          // Simulate processing (you can add actual image processing here)
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
 
-          // Use the appropriate file based on status
-          let fileToProcess: File;
-          if (image.status === 'edited' && image.editedFile) {
-            // For edited images, use the stored edited file
-            fileToProcess = image.editedFile;
-          } else {
-            fileToProcess = image.originalFile;
-          }
+          const fileToProcess =
+            image.status === "edited" && image.editedFile
+              ? image.editedFile
+              : image.originalFile;
 
           const processedUrl = URL.createObjectURL(fileToProcess);
-
-          // Add to ZIP with appropriate filename
-          let zipFileName = fileToProcess.name;
-          if (image.status === 'edited' && image.editedFile) {
-            zipFileName = image.originalFile.name;
-          }
+          const zipFileName = image.originalFile.name;
           zipRef.current.file(zipFileName, fileToProcess);
 
-          // Update status to completed
-          setImages(prev => prev.map(img =>
-            img.id === image.id
-              ? {
-                ...img,
-                status: 'completed' as const,
-                processedUrl,
-                processedSize: fileToProcess.size,
-                progress: 100
-              }
-              : img
-          ));
-
-        } catch (error) {
-          setImages(prev => prev.map(img =>
-            img.id === image.id
-              ? {
-                ...img,
-                status: 'error' as const,
-                error: 'Processing failed'
-              }
-              : img
-          ));
+          setImages((prev) =>
+            prev.map((img) =>
+              img.id === image.id
+                ? {
+                    ...img,
+                    status: "completed" as const,
+                    processedUrl,
+                    processedSize: fileToProcess.size,
+                    progress: 100,
+                  }
+                : img,
+            ),
+          );
+        } catch {
+          setImages((prev) =>
+            prev.map((img) =>
+              img.id === image.id
+                ? {
+                    ...img,
+                    status: "error" as const,
+                    error: "Processing failed",
+                  }
+                : img,
+            ),
+          );
         }
       });
 
       await Promise.all(processPromises);
 
-      // Update simple counter logic removed
-      // const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
-      // await SupabaseCounter.updateCounts(images.length, totalOriginalSize);
-
-      // Generate and download
-      if (images.length === 1 && zipRef.current) {
+      if (images.length === 1) {
         const zipFiles = Object.keys(zipRef.current.files);
         if (zipFiles.length === 1) {
           const filename = zipFiles[0];
-          const content = await zipRef.current.file(filename)?.async('blob');
+          const content = await zipRef.current.file(filename)?.async("blob");
           if (content) {
-            const downloadUrl = URL.createObjectURL(content); // Use generic URL here as MemoryManager isn't used in this file mostly
-            const link = document.createElement('a');
+            const downloadUrl = URL.createObjectURL(content);
+            const link = document.createElement("a");
             link.href = downloadUrl;
             link.download = filename;
             document.body.appendChild(link);
@@ -178,21 +155,20 @@ export function ImageProcessorEditor() {
           }
         }
       } else {
-        // Generate and download ZIP
-        const content = await zipRef.current.generateAsync({ type: 'blob' });
+        const content = await zipRef.current.generateAsync({ type: "blob" });
         const downloadUrl = URL.createObjectURL(content);
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = downloadUrl;
-        link.download = 'edited-images.zip';
+        link.download = "edited-images.zip";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(downloadUrl);
       }
 
-      toast.success('All images processed and downloaded!');
+      toast.success("All images processed and downloaded!");
     } catch (error) {
-      toast.error('Error processing images');
+      toast.error("Error processing images");
       console.error(error);
     } finally {
       setProcessing(false);
@@ -200,53 +176,32 @@ export function ImageProcessorEditor() {
   };
 
   const downloadSingleImage = useCallback((image: ProcessedImage) => {
-    console.log('Downloading image:', {
-      id: image.id,
-      status: image.status,
-      hasEditedFile: !!image.editedFile,
-      editedFileSize: image.editedFile?.size,
-      originalFileSize: image.originalFile.size
-    });
-
-    // For edited images, use the editedFile if available, otherwise previewUrl
-    // For other images, use processedUrl if available, otherwise previewUrl
     let fileToDownload: string;
 
-    if (image.status === 'edited' && image.editedFile) {
-      // Create a new URL for the edited file
+    if (image.status === "edited" && image.editedFile) {
       fileToDownload = URL.createObjectURL(image.editedFile);
-      console.log('Using edited file for download');
     } else {
       fileToDownload = image.processedUrl || image.previewUrl;
-      console.log('Using original file for download');
     }
 
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = fileToDownload;
-
-    // Create a filename that indicates it's edited
-    const originalName = image.originalFile.name;
-    const editedFileName = originalName;
-
-    link.download = editedFileName;
+    link.download = image.originalFile.name;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    // Clean up the URL if we created it
-    if (image.status === 'edited' && image.editedFile) {
+    if (image.status === "edited" && image.editedFile) {
       URL.revokeObjectURL(fileToDownload);
     }
 
-    toast.success('Image downloaded successfully!');
+    toast.success("Image downloaded successfully!");
   }, []);
 
   const clearAll = () => {
-    images.forEach(image => {
+    images.forEach((image) => {
       URL.revokeObjectURL(image.previewUrl);
-      if (image.processedUrl) {
-        URL.revokeObjectURL(image.processedUrl);
-      }
+      if (image.processedUrl) URL.revokeObjectURL(image.processedUrl);
     });
     setImages([]);
   };
@@ -270,26 +225,25 @@ export function ImageProcessorEditor() {
       {/* Images Grid */}
       {images.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">
-              Images ({images.length})
-            </h3>
-            <div className="flex gap-2">
+          {/* Toolbar — responsive */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-lg font-semibold">Images ({images.length})</h3>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
               <Button
                 onClick={processAllImages}
                 disabled={processing || images.length === 0}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2"
               >
                 <Download className="h-4 w-4" />
-                {processing ? 'Processing...' : 'Download All'}
+                <span>{processing ? "Processing..." : "Download All"}</span>
               </Button>
               <Button
                 onClick={clearAll}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2"
               >
                 <Trash2 className="h-4 w-4" />
-                Clear All
+                <span>Clear All</span>
               </Button>
             </div>
           </div>
@@ -301,11 +255,17 @@ export function ImageProcessorEditor() {
                   image={image}
                   onRemove={() => removeImage(image.id)}
                 />
-                <div className="absolute top-2 left-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                {/*
+                 * Action buttons:
+                 * - Desktop: fade in on hover (opacity-0 group-hover:opacity-100)
+                 * - Mobile: always visible (opacity-100 sm:opacity-0 sm:group-hover:opacity-100)
+                 */}
+                <div className="absolute top-2 left-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-20">
                   <Button
                     onClick={() => openEditor(image)}
                     size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 shadow-md"
+                    aria-label="Edit image"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -313,7 +273,8 @@ export function ImageProcessorEditor() {
                     onClick={() => downloadSingleImage(image)}
                     size="sm"
                     variant="outline"
-                    className="bg-white/90 hover:bg-white"
+                    className="bg-white/90 hover:bg-white shadow-md"
+                    aria-label="Download image"
                   >
                     <Download className="h-4 w-4" />
                   </Button>
