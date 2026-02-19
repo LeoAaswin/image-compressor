@@ -273,7 +273,7 @@ export function ImageProcessorEditor() {
                     onClick={() => downloadSingleImage(image)}
                     size="sm"
                     variant="outline"
-                    className="bg-white/90 hover:bg-white shadow-md"
+                    className="bg-red-600 hover:bg-red-700 shadow-md"
                     aria-label="Download image"
                   >
                     <Download className="h-4 w-4" />
