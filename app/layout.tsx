@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Script from 'next/script';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { JsonLd } from '@/components/json-ld';
@@ -86,6 +87,18 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <Script
+            src="https://www.googletagmanager.com/gtag/js?id=G-YVS6XZS3FF"
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-YVS6XZS3FF');
+            `}
+          </Script>
           <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             <Header />
             <main className="flex-1">
