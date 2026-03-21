@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dropzone } from "@/components/dropzone";
@@ -16,10 +16,22 @@ export function ImageProcessorEditor() {
   const [editingImage, setEditingImage] = useState<ProcessedImage | null>(null);
   const [processing, setProcessing] = useState(false);
   const zipRef = useRef<JSZip>(new JSZip());
+  const imagesRef = useRef<ProcessedImage[]>([]);
+  imagesRef.current = images;
+
+  // Cleanup all object URLs on unmount
+  useEffect(() => {
+    return () => {
+      imagesRef.current.forEach(img => {
+        URL.revokeObjectURL(img.previewUrl);
+        if (img.processedUrl) URL.revokeObjectURL(img.processedUrl);
+      });
+    };
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newImages = acceptedFiles.map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       originalFile: file,
       previewUrl: URL.createObjectURL(file),
       processedUrl: null,
@@ -97,8 +109,6 @@ export function ImageProcessorEditor() {
         );
 
         try {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-
           const fileToProcess =
             image.status === "edited" && image.editedFile
               ? image.editedFile

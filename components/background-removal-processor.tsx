@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dropzone } from "@/components/dropzone";
-import { Download, Eraser, RefreshCw, X } from "lucide-react";
+import { Download, Eraser, X } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { LoadingSpinner } from "./loading-spinner";
@@ -20,31 +20,42 @@ interface ProcessedImage {
 
 export function BackgroundRemovalProcessor() {
     const [image, setImage] = useState<ProcessedImage | null>(null);
+    const imageRef = useRef<ProcessedImage | null>(null);
+    imageRef.current = image;
 
-    const handleDrop = async (files: File[]) => {
+    // Cleanup object URLs on unmount
+    useEffect(() => {
+        return () => {
+            if (imageRef.current?.originalUrl) URL.revokeObjectURL(imageRef.current.originalUrl);
+            if (imageRef.current?.processedUrl) URL.revokeObjectURL(imageRef.current.processedUrl);
+        };
+    }, []);
+
+    const handleDrop = useCallback((files: File[]) => {
         if (files.length === 0) return;
 
-        // Only handle the first file for now to keep it simple
-        const file = files[0];
-        const url = URL.createObjectURL(file);
+        // Revoke previous image URLs before replacing
+        if (imageRef.current?.originalUrl) URL.revokeObjectURL(imageRef.current.originalUrl);
+        if (imageRef.current?.processedUrl) URL.revokeObjectURL(imageRef.current.processedUrl);
 
+        const file = files[0];
         setImage({
-            originalUrl: url,
+            originalUrl: URL.createObjectURL(file),
             processedUrl: null,
-            file: file,
+            file,
             name: file.name,
             status: "pending",
         });
-    };
+    }, []);
 
-    const removeBackground = async () => {
-        if (!image) return;
+    const removeBackground = useCallback(async () => {
+        if (!imageRef.current) return;
 
         setImage((prev) => prev ? { ...prev, status: "processing" } : null);
 
         try {
             const formData = new FormData();
-            formData.append("image_file", image.file);
+            formData.append("image_file", imageRef.current.file);
             formData.append("size", "auto");
 
             const response = await fetch("/api/remove-bg", {
@@ -59,52 +70,37 @@ export function BackgroundRemovalProcessor() {
             const blob = await response.blob();
             const processedUrl = URL.createObjectURL(blob);
 
-            setImage((prev) => prev ? {
-                ...prev,
-                processedUrl: processedUrl,
-                status: "completed"
-            } : null);
-
+            setImage((prev) => prev ? { ...prev, processedUrl, status: "completed" } : null);
             toast.success("Background removed successfully!");
 
         } catch (error) {
-            console.error("Error removing background:", error);
-            setImage((prev) => prev ? {
-                ...prev,
-                status: "error",
-                error: "Failed to process image"
-            } : null);
+            const message = error instanceof Error ? error.message : "Failed to process image";
+            setImage((prev) => prev ? { ...prev, status: "error", error: message } : null);
             toast.error("Failed to remove background. Please try again.");
         }
-    };
+    }, []);
 
-    const handleDownload = () => {
-        if (!image?.processedUrl) return;
+    const handleDownload = useCallback(() => {
+        if (!imageRef.current?.processedUrl) return;
 
+        const nameWithoutExt = imageRef.current.name.substring(0, imageRef.current.name.lastIndexOf('.'));
         const link = document.createElement('a');
-        link.href = image.processedUrl;
-
-        // Construct new filename: original-name_no-bg.png
-        const originalName = image.name;
-        const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
-        const newFileName = `${nameWithoutExt}_no-bg.png`;
-
-        link.download = newFileName;
+        link.href = imageRef.current.processedUrl;
+        link.download = `${nameWithoutExt}_no-bg.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
+    }, []);
 
-    const clearImage = () => {
-        if (image?.originalUrl) URL.revokeObjectURL(image.originalUrl);
-        if (image?.processedUrl) URL.revokeObjectURL(image.processedUrl);
+    const clearImage = useCallback(() => {
+        if (imageRef.current?.originalUrl) URL.revokeObjectURL(imageRef.current.originalUrl);
+        if (imageRef.current?.processedUrl) URL.revokeObjectURL(imageRef.current.processedUrl);
         setImage(null);
-    };
+    }, []);
 
     return (
         <div className="space-y-6">
             <div className="grid gap-6">
-                {/* Upload Area */}
                 {!image ? (
                     <Dropzone onDrop={handleDrop} />
                 ) : (
@@ -150,14 +146,14 @@ export function BackgroundRemovalProcessor() {
                                         <div className="relative w-full h-[300px]">
                                             <Image
                                                 src={image.processedUrl}
-                                                alt="Processed"
+                                                alt="Background removed"
                                                 fill
                                                 className="object-contain"
                                             />
                                         </div>
                                     ) : image.status === "error" ? (
                                         <div className="text-center text-destructive space-y-2">
-                                            <p>Failed to process image.</p>
+                                            <p>{image.error ?? "Failed to process image."}</p>
                                             <Button variant="outline" size="sm" onClick={removeBackground}>Try Again</Button>
                                         </div>
                                     ) : (
@@ -176,7 +172,7 @@ export function BackgroundRemovalProcessor() {
                         {/* Actions */}
                         {image.status === "completed" && (
                             <div className="flex justify-end gap-2">
-                                <Button variant="outline" onClick={() => setImage(null)}>Process Another</Button>
+                                <Button variant="outline" onClick={clearImage}>Process Another</Button>
                                 <Button onClick={handleDownload} className="w-full sm:w-auto">
                                     <Download className="w-4 h-4 mr-2" />
                                     Download PNG

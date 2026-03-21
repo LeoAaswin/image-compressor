@@ -139,13 +139,7 @@ export default function Home() {
             <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-6 h-6"
-                  >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
                     <path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
                     <rect x="6" y="6" width="4" height="4" />
                     <rect x="14" y="6" width="4" height="4" />
@@ -155,14 +149,67 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Favicon Generator</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Create favicons for all platforms
-                  </p>
+                  <p className="text-sm text-muted-foreground">Create favicons for all platforms</p>
                 </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                • All sizes • HTML code • ZIP download
+              <div className="text-sm text-muted-foreground">• All sizes • HTML code • ZIP download</div>
+            </div>
+          </Link>
+
+          <Link href="/resize" className="group">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Image Resizer</h3>
+                  <p className="text-sm text-muted-foreground">Resize to any dimension instantly</p>
+                </div>
               </div>
+              <div className="text-sm text-muted-foreground">• Exact size • Percentage • Max dimension</div>
+            </div>
+          </Link>
+
+          <Link href="/color-palette" className="group">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+                    <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                    <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                    <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                    <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Color Palette</h3>
+                  <p className="text-sm text-muted-foreground">Extract colors from any image</p>
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">• Hex & RGB • CSS variables • JSON export</div>
+            </div>
+          </Link>
+
+          <Link href="/metadata" className="group">
+            <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">Metadata Stripper</h3>
+                  <p className="text-sm text-muted-foreground">Remove EXIF & GPS data for privacy</p>
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">• View metadata • Strip EXIF • Protect privacy</div>
             </div>
           </Link>
         </div>

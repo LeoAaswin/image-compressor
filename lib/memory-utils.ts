@@ -1,35 +1,46 @@
 // Memory management utilities for handling large image batches
 
 export class MemoryManager {
-  private static objectUrls = new Set<string>();
+  private static objectUrls = new Map<string, number>(); // url → blob size
   private static maxMemoryUsage = 500 * 1024 * 1024; // 500MB limit
   private static currentMemoryUsage = 0;
 
   static createObjectURL(blob: Blob): string {
     const url = URL.createObjectURL(blob);
-    this.objectUrls.add(url);
+    this.objectUrls.set(url, blob.size);
     this.currentMemoryUsage += blob.size;
     return url;
   }
 
   static revokeObjectURL(url: string): void {
-    if (this.objectUrls.has(url)) {
+    const size = this.objectUrls.get(url);
+    if (size !== undefined) {
       URL.revokeObjectURL(url);
       this.objectUrls.delete(url);
+      this.currentMemoryUsage = Math.max(0, this.currentMemoryUsage - size);
     }
   }
 
   static revokeAllObjectURLs(): void {
-    this.objectUrls.forEach(url => URL.revokeObjectURL(url));
+    this.objectUrls.forEach((_, url) => URL.revokeObjectURL(url));
     this.objectUrls.clear();
     this.currentMemoryUsage = 0;
   }
 
   static getMemoryUsage(): { used: number; max: number; percentage: number } {
+    // Use real browser memory API when available (Chromium-based browsers)
+    if (typeof performance !== 'undefined' && (performance as any).memory) {
+      const mem = (performance as any).memory;
+      return {
+        used: mem.usedJSHeapSize,
+        max: mem.jsHeapSizeLimit,
+        percentage: (mem.usedJSHeapSize / mem.jsHeapSizeLimit) * 100,
+      };
+    }
     return {
       used: this.currentMemoryUsage,
       max: this.maxMemoryUsage,
-      percentage: (this.currentMemoryUsage / this.maxMemoryUsage) * 100
+      percentage: (this.currentMemoryUsage / this.maxMemoryUsage) * 100,
     };
   }
 
@@ -38,7 +49,7 @@ export class MemoryManager {
   }
 
   static cleanupOldestUrls(count: number = 5): void {
-    const urlsToRevoke = Array.from(this.objectUrls).slice(0, count);
+    const urlsToRevoke = Array.from(this.objectUrls.keys()).slice(0, count);
     urlsToRevoke.forEach(url => this.revokeObjectURL(url));
   }
 }
@@ -69,7 +80,7 @@ export class ProcessingQueue {
 
     this.running++;
     const task = this.queue.shift();
-    
+
     if (task) {
       try {
         await task();

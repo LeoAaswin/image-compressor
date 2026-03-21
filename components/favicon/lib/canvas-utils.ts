@@ -64,10 +64,6 @@ export function drawCenteredText(
   ctx.font = `bold ${fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  
-  // Debug: Log the actual font size being applied
-  console.log(`Drawing text "${text}" with font size ${fontSize}px on ${size}x${size} canvas`);
-  
   ctx.fillText(text, size / 2, size / 2);
 }
 
@@ -86,13 +82,8 @@ export function createTextCanvas(
   canvas.width = size;
   canvas.height = size;
 
-  // Scale border width proportionally
   const scaledBorderWidth = settings.borderWidth * (size / 256);
-  // Scale font size proportionally
   const scaledFontSize = settings.fontSize * (size / 256);
-
-  // Debug: Log scaling calculations
-  console.log(`Canvas ${size}x${size}: Scale factor=${size/256}, Original fontSize=${settings.fontSize}, Scaled fontSize=${scaledFontSize}, BorderRadius=${settings.borderRadius}%`);
 
   drawRoundedRect(ctx, size, settings.borderRadius, settings.backgroundColor, settings.borderColor, scaledBorderWidth);
   drawCenteredText(ctx, settings.faviconText, size, scaledFontSize, settings.fontFamily, settings.textColor);

@@ -1,42 +1,27 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Download, AlertTriangle, MemoryStick } from 'lucide-react';
+import { Download } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import JSZip from 'jszip';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dropzone } from '@/components/dropzone';
 import { ImageCardEnhanced } from '@/components/image-card-enhanced';
-import { MemoryMonitor } from '@/components/memory-monitor';
 import { ProcessedImage } from '@/lib/types';
 import { MemoryManager, ProcessingQueue, formatFileSize, estimateMemoryUsage } from '@/lib/memory-utils';
-import { MAX_TOTAL_SIZE, MAX_CONCURRENT_PROCESSING, MEMORY_WARNING_THRESHOLD } from '@/lib/constants';
+import { MAX_TOTAL_SIZE } from '@/lib/constants';
 
 
 export function CompressionProcessorOptimized() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [quality, setQuality] = useState(75);
   const [processing, setProcessing] = useState(false);
-  const [memoryUsage, setMemoryUsage] = useState({ used: 0, max: 0, percentage: 0 });
-  const [showMemoryWarning, setShowMemoryWarning] = useState(false);
+  const [processedCount, setProcessedCount] = useState(0);
   const processingQueue = useRef(new ProcessingQueue());
   const zipRef = useRef<JSZip | null>(null);
-
-  // Memory monitoring
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const usage = MemoryManager.getMemoryUsage();
-      setMemoryUsage(usage);
-      setShowMemoryWarning(usage.percentage > MEMORY_WARNING_THRESHOLD * 100);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -60,7 +45,7 @@ export function CompressionProcessorOptimized() {
     }
 
     const newImages = acceptedFiles.map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       originalFile: file,
       previewUrl: MemoryManager.createObjectURL(file),
       processedUrl: null,
@@ -86,16 +71,20 @@ export function CompressionProcessorOptimized() {
     });
   }, []);
 
-  const processImages = async () => {
+  const processImages = useCallback(async () => {
+    // Only process images that haven't been completed yet
+    const pendingImages = images.filter(img => img.status === 'pending' || img.status === 'error');
+    if (pendingImages.length === 0) return;
+
     setProcessing(true);
+    setProcessedCount(0);
     zipRef.current = new JSZip();
-    let processedCount = 0;
+    let successCount = 0;
+    let errorCount = 0;
 
     try {
-      // Process images in queue to limit memory usage
-      const processPromises = images.map((image) =>
+      const processPromises = pendingImages.map((image) =>
         processingQueue.current.add(async () => {
-          // Update status to processing
           setImages((prev) =>
             prev.map((img) =>
               img.id === image.id ? { ...img, status: 'processing' } : img
@@ -110,88 +99,69 @@ export function CompressionProcessorOptimized() {
               initialQuality: quality / 100,
             };
 
-            const compressedFile = await imageCompression(
-              image.originalFile,
-              options
-            );
-
+            const compressedFile = await imageCompression(image.originalFile, options);
             const processedUrl = MemoryManager.createObjectURL(compressedFile);
 
             setImages((prev) =>
               prev.map((img) =>
                 img.id === image.id
-                  ? {
-                    ...img,
-                    processedUrl,
-                    processedSize: compressedFile.size,
-                    progress: 100,
-                    status: 'completed',
-                  }
+                  ? { ...img, processedUrl, processedSize: compressedFile.size, progress: 100, status: 'completed' }
                   : img
               )
             );
 
-            // Add to ZIP
             if (zipRef.current) {
               const extension = image.originalFile.name.split('.').pop();
-              const baseName = image.originalFile.name.slice(0, -(extension?.length || 0) - 1);
+              const rawBase = image.originalFile.name.slice(0, -(extension?.length || 0) - 1);
+              const baseName = rawBase.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
               zipRef.current.file(`${baseName}-compressed.${extension}`, compressedFile);
             }
 
-            processedCount++;
+            successCount++;
+            setProcessedCount(successCount);
 
-            // Cleanup old preview URLs if memory usage is high
             if (MemoryManager.isMemoryLimitReached()) {
               MemoryManager.cleanupOldestUrls(3);
             }
 
           } catch (error) {
+            errorCount++;
             setImages((prev) =>
               prev.map((img) =>
                 img.id === image.id
-                  ? {
-                    ...img,
-                    status: 'error',
-                    error: error instanceof Error ? error.message : 'Processing failed',
-                  }
+                  ? { ...img, status: 'error', error: error instanceof Error ? error.message : 'Processing failed' }
                   : img
               )
             );
-            throw error;
           }
         })
       );
 
       await Promise.all(processPromises);
 
-      // Update simple counter logic removed
-      // const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
-      // await SupabaseCounter.updateCounts(processedCount, totalOriginalSize);
+      if (successCount === 0) {
+        toast.error('No images were compressed successfully.');
+        return;
+      }
 
-      // Generate and download
-      if (images.length === 1 && processedCount === 1) {
-        // Single file download
-        const link = document.createElement('a');
-        // BETTER APPROACH:
-        // We already have the compressedFile inside the loop. But we cant access it here easily.
-        // Let's grab the blob from the zip since we added it there!
-        if (zipRef.current) {
-          const zipFiles = Object.keys(zipRef.current.files);
-          if (zipFiles.length === 1) {
-            const filename = zipFiles[0];
-            const content = await zipRef.current.file(filename)?.async('blob');
-            if (content) {
-              const downloadUrl = MemoryManager.createObjectURL(content);
-              link.href = downloadUrl;
-              link.download = filename;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 1000);
-            }
+      // Single file — download directly without zipping
+      if (pendingImages.length === 1 && successCount === 1 && zipRef.current) {
+        const zipFiles = Object.keys(zipRef.current.files);
+        if (zipFiles.length === 1) {
+          const filename = zipFiles[0];
+          const content = await zipRef.current.file(filename)?.async('blob');
+          if (content) {
+            const downloadUrl = MemoryManager.createObjectURL(content);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 5000);
           }
         }
-      } else if (zipRef.current && processedCount > 0) {
+      } else if (zipRef.current && successCount > 0) {
         const content = await zipRef.current.generateAsync({ type: 'blob' });
         const downloadUrl = MemoryManager.createObjectURL(content);
         const link = document.createElement('a');
@@ -200,20 +170,23 @@ export function CompressionProcessorOptimized() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
-        // Cleanup download URL
-        setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 1000);
+        setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 5000);
       }
 
-      toast.success(`Successfully processed ${processedCount} images!`);
+      if (errorCount > 0) {
+        toast.warning(`Compressed ${successCount} images. ${errorCount} failed.`);
+      } else {
+        toast.success(`Successfully compressed ${successCount} image${successCount > 1 ? 's' : ''}!`);
+      }
     } catch (error) {
-      toast.error('Error processing images');
+      toast.error('Unexpected error during compression');
       console.error(error);
     } finally {
       setProcessing(false);
+      setProcessedCount(0);
       zipRef.current = null;
     }
-  };
+  }, [images, quality]);
 
   const clearAllImages = useCallback(() => {
     images.forEach(img => {
@@ -225,6 +198,7 @@ export function CompressionProcessorOptimized() {
     setImages([]);
   }, [images]);
 
+  const pendingCount = images.filter(img => img.status === 'pending' || img.status === 'error').length;
   const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
   const totalProcessedSize = images.reduce((sum, img) => sum + img.processedSize, 0);
   const compressionRatio = totalOriginalSize > 0 ? ((totalOriginalSize - totalProcessedSize) / totalOriginalSize) * 100 : 0;
@@ -232,19 +206,11 @@ export function CompressionProcessorOptimized() {
   return (
     <div className="space-y-8">
       <div className="prose dark:prose-invert">
-        <h2>Image Compression (Optimized)</h2>
+        <h2>Image Compression</h2>
         <p className="text-muted-foreground">
           Compress your images while maintaining quality. Supports batch processing with memory management.
         </p>
       </div>
-
-      {/* Enhanced Memory Monitor */}
-      <MemoryMonitor
-        memoryUsage={memoryUsage}
-        showWarning={showMemoryWarning}
-        processingCount={images.filter(img => img.status === 'processing').length}
-        totalImages={images.length}
-      />
 
       <Dropzone onDrop={onDrop} />
 
@@ -302,15 +268,15 @@ export function CompressionProcessorOptimized() {
             </Button>
             <Button
               onClick={processImages}
-              disabled={processing || images.length === 0}
+              disabled={processing || pendingCount === 0}
               className="min-w-[150px]"
             >
               {processing ? (
-                'Compressing...'
+                `Compressing... (${processedCount}/${pendingCount + processedCount})`
               ) : (
                 <>
                   <Download className="w-4 h-4 mr-2" />
-                  Compress & Download
+                  {pendingCount < images.length ? 'Compress Remaining' : 'Compress & Download'}
                 </>
               )}
             </Button>

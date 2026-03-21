@@ -25,14 +25,14 @@ export const metadata: Metadata = {
   authors: [{ name: 'OptiPix Team' }],
   creator: 'OptiPix',
   publisher: 'OptiPix',
-  metadataBase: new URL('https://optipix.dhakalasmin.com.np'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://optipix.dhakalasmin.com.np'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'OptiPix - Ultimate Image Optimization Tool',
     description: 'Compress, convert, and edit images locally in your browser. No file upload limits, privacy-first processing.',
-    url: 'https://optipix.dhakalasmin.com.np',
+    url: process.env.NEXT_PUBLIC_BASE_URL || 'https://optipix.dhakalasmin.com.np',
     siteName: 'OptiPix',
     images: [
       {

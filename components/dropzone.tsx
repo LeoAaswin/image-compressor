@@ -4,7 +4,7 @@ import { useDropzone } from "react-dropzone";
 import { Upload, Image as ImageIcon, FileImage, Zap } from "lucide-react";
 import { MAX_FILE_SIZE } from "@/lib/constants";
 import { formatFileSize as formatSize } from "@/lib/memory-utils";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface DropzoneProps {
   onDrop: (acceptedFiles: File[]) => void;
@@ -33,16 +33,7 @@ export function Dropzone({ onDrop }: DropzoneProps) {
       multiple: true,
     });
 
-  useEffect(() => {
-    if (fileRejections.length > 0) {
-      const errors = fileRejections
-        .map((rejection) =>
-          rejection.errors.map((error) => error.message).join(", ")
-        )
-        .join("; ");
-      console.warn("File rejection errors:", errors);
-    }
-  }, [fileRejections]);
+  // File rejection errors are displayed in the UI below the dropzone
 
   return (
     <div className="space-y-4">

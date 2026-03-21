@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { FAVICON_SIZES, DEFAULT_TEXT_SETTINGS } from '../lib/constants';
 import {
@@ -37,13 +37,19 @@ export function useFaviconGenerator() {
   const [textSettings, setTextSettings] = useState<TextFaviconSettings>(DEFAULT_TEXT_SETTINGS);
   const [textPreview, setTextPreview] = useState<string | null>(null);
 
+  // Keep a ref to always have the latest values for unmount cleanup
+  const faviconStateRef = useRef({ generatedFavicons, standardIco });
+  useEffect(() => {
+    faviconStateRef.current = { generatedFavicons, standardIco };
+  }, [generatedFavicons, standardIco]);
+
   // Cleanup all object URLs on unmount
   useEffect(() => {
     return () => {
-      generatedFavicons.forEach((f) => URL.revokeObjectURL(f.url));
-      if (standardIco) URL.revokeObjectURL(standardIco.url);
+      faviconStateRef.current.generatedFavicons.forEach((f) => URL.revokeObjectURL(f.url));
+      if (faviconStateRef.current.standardIco) URL.revokeObjectURL(faviconStateRef.current.standardIco.url);
     };
-  }, []); // eslint-disable-line
+  }, []);
 
   // Generate text preview whenever settings change
   useEffect(() => {
@@ -76,7 +82,7 @@ export function useFaviconGenerator() {
     [cleanupFavicons]
   );
 
-  const generateFavicons = async () => {
+  const generateFavicons = useCallback(async () => {
     if (mode === 'image' && !imagePreview) { toast.error('Please upload an image first'); return; }
     if (mode === 'text' && !textSettings.faviconText.trim()) { toast.error('Please enter text for the favicon'); return; }
 
@@ -106,17 +112,17 @@ export function useFaviconGenerator() {
 
       setStandardIco(ico);
       setGeneratedFavicons(favicons);
+      setProgress(100);
       toast.success(`Generated ${favicons.length + (ico ? 1 : 0)} favicon files (including ICO)`);
     } catch (err) {
       console.error(err);
       toast.error('Failed to generate favicons');
     } finally {
       setProcessing(false);
-      setProgress(0);
     }
-  };
+  }, [mode, imagePreview, textSettings, selectedSizes, cleanupFavicons]);
 
-  const downloadAllFavicons = async () => {
+  const downloadAllFavicons = useCallback(async () => {
     if (!generatedFavicons.length) return;
     try {
       const JSZip = (await import('jszip')).default;
@@ -138,17 +144,17 @@ export function useFaviconGenerator() {
       console.error(err);
       toast.error('Failed to create ZIP file');
     }
-  };
+  }, [generatedFavicons, standardIco, mode, textSettings.backgroundColor]);
 
-  const copyHTMLCode = () => {
+  const copyHTMLCode = useCallback(() => {
     navigator.clipboard.writeText(generateHTMLCode())
       .then(() => toast.success('HTML code copied to clipboard'))
       .catch(() => toast.error('Failed to copy HTML code'));
-  };
+  }, []);
 
-  const updateTextSetting = <K extends keyof TextFaviconSettings>(key: K, value: TextFaviconSettings[K]) => {
+  const updateTextSetting = useCallback(<K extends keyof TextFaviconSettings>(key: K, value: TextFaviconSettings[K]) => {
     setTextSettings((prev) => ({ ...prev, [key]: value }));
-  };
+  }, []);
 
   return {
     // state

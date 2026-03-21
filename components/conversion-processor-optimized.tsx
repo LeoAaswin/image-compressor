@@ -1,42 +1,25 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Download, AlertTriangle, MemoryStick, FileImage } from 'lucide-react';
+import { Download, FileImage } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import JSZip from 'jszip';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dropzone } from '@/components/dropzone';
 import { ImageCardEnhanced } from '@/components/image-card-enhanced';
-import { MemoryMonitor } from '@/components/memory-monitor';
 import { FormatSelector } from '@/components/format-selector';
 import { ProcessedImage } from '@/lib/types';
 import { MemoryManager, ProcessingQueue, formatFileSize, estimateMemoryUsage } from '@/lib/memory-utils';
-import { MAX_TOTAL_SIZE, MAX_CONCURRENT_PROCESSING, MEMORY_WARNING_THRESHOLD } from '@/lib/constants';
-import { IMAGE_FORMATS } from '@/lib/constants';
+import { MAX_TOTAL_SIZE, IMAGE_FORMATS } from '@/lib/constants';
 
 
 export function ConversionProcessorOptimized() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
   const [outputFormat, setOutputFormat] = useState('webp');
   const [processing, setProcessing] = useState(false);
-  const [memoryUsage, setMemoryUsage] = useState({ used: 0, max: 0, percentage: 0 });
-  const [showMemoryWarning, setShowMemoryWarning] = useState(false);
   const processingQueue = useRef(new ProcessingQueue());
   const zipRef = useRef<JSZip | null>(null);
-
-  // Memory monitoring
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const usage = MemoryManager.getMemoryUsage();
-      setMemoryUsage(usage);
-      setShowMemoryWarning(usage.percentage > MEMORY_WARNING_THRESHOLD * 100);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -60,7 +43,7 @@ export function ConversionProcessorOptimized() {
     }
 
     const newImages = acceptedFiles.map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       originalFile: file,
       previewUrl: MemoryManager.createObjectURL(file),
       processedUrl: null,
@@ -86,15 +69,17 @@ export function ConversionProcessorOptimized() {
     });
   }, []);
 
-  const processImages = async () => {
+  const processImages = useCallback(async () => {
+    const pendingImages = images.filter(img => img.status === 'pending' || img.status === 'error');
+    if (pendingImages.length === 0) return;
+
     setProcessing(true);
     zipRef.current = new JSZip();
     let processedCount = 0;
     let errorCount = 0;
 
     try {
-      // Process images in queue to limit memory usage
-      const processPromises = images.map((image) =>
+      const processPromises = pendingImages.map((image) =>
         processingQueue.current.add(async () => {
           // Update status to processing
           setImages((prev) =>
@@ -105,7 +90,8 @@ export function ConversionProcessorOptimized() {
 
           try {
             let convertedFile: File;
-            const baseName = image.originalFile.name.split('.')[0];
+            const rawName = image.originalFile.name.split('.')[0];
+            const baseName = rawName.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
 
             // Handle SVG conversion separately since it's vector-based
             if (outputFormat === 'svg') {
@@ -196,7 +182,7 @@ export function ConversionProcessorOptimized() {
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
-              setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 1000);
+              setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 5000);
             }
           }
         }
@@ -211,7 +197,7 @@ export function ConversionProcessorOptimized() {
         document.body.removeChild(link);
 
         // Cleanup download URL
-        setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 1000);
+        setTimeout(() => MemoryManager.revokeObjectURL(downloadUrl), 5000);
       }
 
       if (errorCount > 0) {
@@ -226,7 +212,7 @@ export function ConversionProcessorOptimized() {
       setProcessing(false);
       zipRef.current = null;
     }
-  };
+  }, [images, outputFormat]);
 
   // Helper function to convert raster images to SVG
   const convertToSvg = async (file: File): Promise<File> => {
@@ -235,16 +221,17 @@ export function ConversionProcessorOptimized() {
       const ctx = canvas.getContext('2d');
       const img = new Image();
 
+      const objectUrl = URL.createObjectURL(file);
+
       img.onload = () => {
-        // Use natural dimensions for better accuracy
+        URL.revokeObjectURL(objectUrl);
         const width = img.naturalWidth || img.width;
         const height = img.naturalHeight || img.height;
-        
+
         canvas.width = width;
         canvas.height = height;
         ctx?.drawImage(img, 0, 0, width, height);
 
-        // Create SVG with embedded image and proper dimensions
         const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
   <image href="${canvas.toDataURL('image/png', 1.0)}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid meet"/>
@@ -255,8 +242,12 @@ export function ConversionProcessorOptimized() {
         resolve(svgFile);
       };
 
-      img.onerror = () => reject(new Error('Failed to load image for SVG conversion'));
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Failed to load image for SVG conversion'));
+      };
+
+      img.src = objectUrl;
     });
   };
 
@@ -279,26 +270,35 @@ export function ConversionProcessorOptimized() {
         
         let svgWidth = 800; // fallback
         let svgHeight = 600; // fallback
-        
+        let usedFallback = true;
+
         if (widthMatch && heightMatch) {
           svgWidth = parseInt(widthMatch[1]) || 800;
           svgHeight = parseInt(heightMatch[1]) || 600;
+          usedFallback = false;
         } else if (viewBoxMatch) {
           const values = viewBoxMatch[1].split(' ');
           svgWidth = parseInt(values[2]) || 800;
           svgHeight = parseInt(values[3]) || 600;
+          usedFallback = false;
         }
 
+        if (usedFallback) {
+          toast.warning(`Could not read dimensions from ${svgFile.name}, using 800×600 fallback`);
+        }
+
+        const svgObjectUrl = URL.createObjectURL(svgFile);
+
         img.onload = () => {
+          URL.revokeObjectURL(svgObjectUrl);
           canvas.width = svgWidth;
           canvas.height = svgHeight;
-          
-          // Set high quality rendering
+
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
           }
-          
+
           ctx?.drawImage(img, 0, 0, svgWidth, svgHeight);
 
           canvas.toBlob((blob) => {
@@ -313,8 +313,12 @@ export function ConversionProcessorOptimized() {
           }, IMAGE_FORMATS[targetFormat.toUpperCase() as keyof typeof IMAGE_FORMATS].mimeType, 0.95);
         };
 
-        img.onerror = () => reject(new Error('Failed to load SVG for conversion'));
-        img.src = URL.createObjectURL(svgFile);
+        img.onerror = () => {
+          URL.revokeObjectURL(svgObjectUrl);
+          reject(new Error('Failed to load SVG for conversion'));
+        };
+
+        img.src = svgObjectUrl;
       };
 
       reader.onerror = () => reject(new Error('Failed to read SVG file'));
@@ -337,23 +341,16 @@ export function ConversionProcessorOptimized() {
   const completedImages = images.filter(img => img.status === 'completed').length;
   const errorImages = images.filter(img => img.status === 'error').length;
   const processingImages = images.filter(img => img.status === 'processing').length;
+  const pendingCount = images.filter(img => img.status === 'pending' || img.status === 'error').length;
 
   return (
     <div className="space-y-8">
       <div className="prose dark:prose-invert">
-        <h2>Format Conversion (Optimized)</h2>
+        <h2>Format Conversion</h2>
         <p className="text-muted-foreground">
           Convert your images to different formats with memory-safe batch processing.
         </p>
       </div>
-
-      {/* Enhanced Memory Monitor */}
-      <MemoryMonitor
-        memoryUsage={memoryUsage}
-        showWarning={showMemoryWarning}
-        processingCount={images.filter(img => img.status === 'processing').length}
-        totalImages={images.length}
-      />
 
       <Dropzone onDrop={onDrop} />
 
@@ -421,15 +418,15 @@ export function ConversionProcessorOptimized() {
             </Button>
             <Button
               onClick={processImages}
-              disabled={processing || images.length === 0}
+              disabled={processing || pendingCount === 0}
               className="min-w-[150px]"
             >
               {processing ? (
-                `Converting... (${completedImages}/${images.length})`
+                `Converting... (${completedImages}/${pendingCount + completedImages})`
               ) : (
                 <>
                   <Download className="w-4 h-4 mr-2" />
-                  Convert & Download
+                  {pendingCount < images.length ? 'Convert Remaining' : 'Convert & Download'}
                 </>
               )}
             </Button>
