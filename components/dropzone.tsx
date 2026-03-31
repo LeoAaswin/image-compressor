@@ -4,7 +4,9 @@ import { useDropzone } from "react-dropzone";
 import { Upload, Image as ImageIcon, FileImage, Zap } from "lucide-react";
 import { MAX_FILE_SIZE } from "@/lib/constants";
 import { formatFileSize as formatSize } from "@/lib/memory-utils";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { normalizeImageFiles } from "@/lib/heic-utils";
+import { toast } from "sonner";
 
 interface DropzoneProps {
   onDrop: (acceptedFiles: File[]) => void;
@@ -15,9 +17,26 @@ export function Dropzone({ onDrop }: DropzoneProps) {
   const [dragCounter, setDragCounter] = useState(false);
   const [isTouchActive, setIsTouchActive] = useState(false);
 
+  const handleDrop = useCallback(async (acceptedFiles: File[]) => {
+    const heicFiles = acceptedFiles.filter(
+      (f) => f.type === 'image/heic' || f.type === 'image/heif' ||
+             f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif')
+    );
+    if (heicFiles.length > 0) {
+      toast.info(`Converting ${heicFiles.length} HEIC file${heicFiles.length > 1 ? 's' : ''} to JPEG...`);
+    }
+    try {
+      const normalized = await normalizeImageFiles(acceptedFiles);
+      onDrop(normalized);
+    } catch (err) {
+      console.error('HEIC conversion error:', err);
+      toast.error('Failed to convert HEIC file. Please check the browser console for details.');
+    }
+  }, [onDrop]);
+
   const { getRootProps, getInputProps, isDragActive, fileRejections } =
     useDropzone({
-      onDrop,
+      onDrop: handleDrop,
       accept: {
         "image/jpeg": [".jpg", ".jpeg"],
         "image/png": [".png"],
@@ -28,6 +47,8 @@ export function Dropzone({ onDrop }: DropzoneProps) {
         "image/avif": [".avif"],
         "image/x-icon": [".ico"],
         "image/svg+xml": [".svg"],
+        "image/heic": [".heic"],
+        "image/heif": [".heif"],
       },
       maxSize: MAX_FILE_SIZE,
       multiple: true,
@@ -119,7 +140,7 @@ export function Dropzone({ onDrop }: DropzoneProps) {
             <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
               <span className="flex items-center gap-1">
                 <FileImage className="w-3 h-3 sm:w-4 sm:h-4" />
-                JPEG, PNG, WEBP, GIF
+                JPEG, PNG, WEBP, HEIC & more
               </span>
               <span className="text-muted-foreground/60">•</span>
               <span>Max {formatSize(MAX_FILE_SIZE)}</span>
