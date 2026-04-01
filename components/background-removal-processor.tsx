@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dropzone } from "@/components/dropzone";
-import { Download, Eraser, X } from "lucide-react";
+import { Download, Eraser, X, Info } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { LoadingSpinner } from "./loading-spinner";
@@ -102,7 +102,13 @@ export function BackgroundRemovalProcessor() {
         <div className="space-y-6">
             <div className="grid gap-6">
                 {!image ? (
-                    <Dropzone onDrop={handleDrop} />
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-2.5 border border-border/50">
+                            <Info className="w-4 h-4 shrink-0 text-primary" />
+                            <span>Processes <strong>one image at a time</strong>. Drop a new image to replace the current one.</span>
+                        </div>
+                        <Dropzone onDrop={handleDrop} />
+                    </div>
                 ) : (
                     <div className="space-y-6">
                         <div className="flex justify-between items-center">

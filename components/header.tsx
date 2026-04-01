@@ -189,9 +189,10 @@ export function Header() {
   }, [searchQuery, allTools]);
 
   return (
-    <nav className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <>
+      <nav className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className={`flex items-center transition-opacity ${
             pathname === '/' ? 'opacity-100' : 'opacity-80 hover:opacity-100'
@@ -232,13 +233,19 @@ export function Header() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="mb-2"
                     autoFocus
+                    role="combobox"
+                    aria-expanded={filteredTools.length > 0}
+                    aria-haspopup="listbox"
+                    aria-label="Search tools"
                   />
                   {filteredTools.length > 0 && (
-                    <div className="max-h-48 overflow-y-auto">
+                    <div className="max-h-48 overflow-y-auto" role="listbox" aria-live="polite" aria-label="Search results">
                       {filteredTools.map((tool) => (
                         <Link
                           key={tool.href}
                           href={tool.href}
+                          role="option"
+                          aria-selected={false}
                           onClick={() => {
                             setIsSearchOpen(false);
                             setSearchQuery('');
@@ -326,16 +333,27 @@ export function Header() {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label="Toggle navigation menu"
               className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
+      </div>
+    </nav>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden fixed inset-0 top-16 z-50 bg-background/95 backdrop-blur-md">
+    {/* Mobile Navigation */}
+    {isMenuOpen && (
+          <div
+            id="mobile-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+            className="md:hidden fixed inset-0 top-16 z-50 bg-background/95 backdrop-blur-md"
+          >
             <div className="h-full overflow-y-auto">
               {/* Mobile Search */}
               <div className="sticky top-0 bg-background/95 backdrop-blur-md border-b px-4 py-4 z-10">
@@ -474,7 +492,6 @@ export function Header() {
             </div>
           </div>
         )}
-      </div>
-    </nav>
+    </>
   );
 }

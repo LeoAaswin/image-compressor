@@ -2,7 +2,7 @@ import { ImageProcessorEditor } from "@/components/image-processor-editor";
 
 export default function EditPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <main className="min-h-[100dvh] bg-gradient-to-br from-background via-background to-muted/20">
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -19,7 +19,7 @@ export default function EditPage() {
             </p>
           </div>
 
-          <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-4 sm:p-6">
+          <div className="bg-transparent sm:bg-card/50 sm:backdrop-blur-sm sm:rounded-xl sm:border sm:p-6">
             <ImageProcessorEditor />
           </div>
         </div>

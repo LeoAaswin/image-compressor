@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { Dropzone } from "@/components/dropzone";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Copy, Download, RefreshCw, X } from "lucide-react";
+import { Copy, Download, RefreshCw, X, Check } from "lucide-react";
 
 interface PaletteColor {
   hex: string;
@@ -67,6 +67,7 @@ export function ColorPaletteExtractor() {
   const [palette, setPalette] = useState<PaletteColor[]>([]);
   const [loading, setLoading] = useState(false);
   const [colorCount, setColorCount] = useState(8);
+  const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const urlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -119,7 +120,11 @@ export function ColorPaletteExtractor() {
 
   const copyHex = useCallback((hex: string) => {
     navigator.clipboard.writeText(hex)
-      .then(() => toast.success(`Copied ${hex}`))
+      .then(() => {
+        setCopiedHex(hex);
+        setTimeout(() => setCopiedHex(null), 1500);
+        toast.success(`Copied ${hex}`);
+      })
       .catch(() => toast.error("Failed to copy"));
   }, []);
 
@@ -235,6 +240,7 @@ export function ColorPaletteExtractor() {
                         key={color.hex}
                         onClick={() => copyHex(color.hex)}
                         className="group rounded-xl overflow-hidden border hover:scale-[1.02] transition-transform"
+                        aria-label={copiedHex === color.hex ? 'Copied!' : `Copy ${color.hex}`}
                         title={`Click to copy ${color.hex}`}
                       >
                         <div
@@ -245,8 +251,11 @@ export function ColorPaletteExtractor() {
                             className="text-xs font-mono font-bold opacity-0 group-hover:opacity-100 transition-opacity"
                             style={{ color: textColor }}
                           >
-                            <Copy className="w-4 h-4 inline mr-1" />
-                            Copy
+                            {copiedHex === color.hex ? (
+                              <><Check className="w-4 h-4 inline mr-1" />Copied!</>
+                            ) : (
+                              <><Copy className="w-4 h-4 inline mr-1" />Copy</>
+                            )}
                           </span>
                         </div>
                         <div className="p-2 bg-card text-left">

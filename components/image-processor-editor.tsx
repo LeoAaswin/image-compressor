@@ -208,6 +208,14 @@ export function ImageProcessorEditor() {
     toast.success("Image downloaded successfully!");
   }, []);
 
+  const resetImageStatus = useCallback((id: string) => {
+    setImages((prev) =>
+      prev.map((img) =>
+        img.id === id ? { ...img, status: 'pending' as const, error: undefined, progress: 0 } : img
+      )
+    );
+  }, []);
+
   const clearAll = () => {
     images.forEach((image) => {
       URL.revokeObjectURL(image.previewUrl);
@@ -217,17 +225,7 @@ export function ImageProcessorEditor() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <div className="flex items-center justify-center gap-2">
-          <ImageIcon className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-bold">Image Editor</h2>
-        </div>
-        <p className="text-muted-foreground">
-          Crop, scale, and edit your images with precision
-        </p>
-      </div>
+    <div className="space-y-4 sm:space-y-6">
 
       {/* Dropzone */}
       <Dropzone onDrop={onDrop} />
@@ -264,6 +262,7 @@ export function ImageProcessorEditor() {
                 <ImageCardEnhanced
                   image={image}
                   onRemove={() => removeImage(image.id)}
+                  onRetry={image.status === 'error' ? () => resetImageStatus(image.id) : undefined}
                 />
                 {/*
                  * Action buttons:

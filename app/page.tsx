@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, TrendingUp, Users, Zap, Shield, Clock } from "lucide-react";
+import { Sparkles, TrendingUp, Users, Zap, Shield, Clock, Cpu } from "lucide-react";
 
 export default function Home() {
   const stats = [
@@ -293,10 +293,7 @@ export default function Home() {
           {/* Enhanced trust indicators */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mt-12 p-6 bg-gradient-to-r from-muted/20 via-muted/10 to-muted/20 rounded-2xl border border-border/50 backdrop-blur-sm">
             <div className="flex items-center space-x-2">
-              <div className="relative">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75"></div>
-              </div>
+              <Cpu className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium">Real-Time Processing</span>
             </div>
             <div className="flex items-center space-x-2">

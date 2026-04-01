@@ -17,11 +17,19 @@ import { MAX_TOTAL_SIZE } from '@/lib/constants';
 
 export function CompressionProcessorOptimized() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
-  const [quality, setQuality] = useState(75);
+  const [quality, setQuality] = useState(() => {
+    if (typeof window === 'undefined') return 75;
+    return Number(localStorage.getItem('opti-quality') ?? 75);
+  });
   const [processing, setProcessing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
   const processingQueue = useRef(new ProcessingQueue());
   const zipRef = useRef<JSZip | null>(null);
+
+  // Persist quality preference
+  useEffect(() => {
+    localStorage.setItem('opti-quality', String(quality));
+  }, [quality]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -188,6 +196,14 @@ export function CompressionProcessorOptimized() {
     }
   }, [images, quality]);
 
+  const resetImageStatus = useCallback((id: string) => {
+    setImages((prev) =>
+      prev.map((img) =>
+        img.id === id ? { ...img, status: 'pending' as const, error: undefined, progress: 0 } : img
+      )
+    );
+  }, []);
+
   const clearAllImages = useCallback(() => {
     images.forEach(img => {
       MemoryManager.revokeObjectURL(img.previewUrl);
@@ -220,6 +236,7 @@ export function CompressionProcessorOptimized() {
             key={image.id}
             image={image}
             onRemove={removeImage}
+            onRetry={image.status === 'error' ? () => resetImageStatus(image.id) : undefined}
           />
         ))}
       </div>

@@ -3,7 +3,7 @@
 import { ProcessedImage } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { X, CheckCircle, AlertCircle, Loader2, FileImage, Edit3 } from "lucide-react";
+import { X, CheckCircle, AlertCircle, Loader2, FileImage, Edit3, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { formatFileSize } from "@/lib/memory-utils";
@@ -11,9 +11,10 @@ import { formatFileSize } from "@/lib/memory-utils";
 interface ImageCardEnhancedProps {
   image: ProcessedImage;
   onRemove: (id: string) => void;
+  onRetry?: () => void;
 }
 
-export function ImageCardEnhanced({ image, onRemove }: ImageCardEnhancedProps) {
+export function ImageCardEnhanced({ image, onRemove, onRetry }: ImageCardEnhancedProps) {
   const getStatusIcon = () => {
     switch (image.status) {
       case 'completed':
@@ -54,7 +55,7 @@ export function ImageCardEnhanced({ image, onRemove }: ImageCardEnhancedProps) {
       <Button
         variant="destructive"
         size="icon"
-        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 z-30 h-8 w-8 shadow-lg"
+        className="absolute top-3 right-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 z-30 h-8 w-8 shadow-lg"
         onClick={() => onRemove(image.id)}
       >
         <X className="h-4 w-4" />
@@ -64,7 +65,7 @@ export function ImageCardEnhanced({ image, onRemove }: ImageCardEnhancedProps) {
       <div className="aspect-square relative overflow-hidden">
         <Image
           src={image.processedUrl || image.previewUrl}
-          alt="Preview"
+          alt={image.originalFile.name}
           width={400}
           height={400}
           className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
@@ -156,6 +157,16 @@ export function ImageCardEnhanced({ image, onRemove }: ImageCardEnhancedProps) {
               <span className="font-medium text-red-800 dark:text-red-200">Processing Failed</span>
             </div>
             <p className="text-xs text-red-700 dark:text-red-300">{image.error}</p>
+            {onRetry && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onRetry}
+                className="mt-2 w-full text-xs h-7 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/50"
+              >
+                <RefreshCw className="w-3 h-3 mr-1" /> Retry
+              </Button>
+            )}
           </div>
         )}
 

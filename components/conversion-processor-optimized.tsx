@@ -16,10 +16,18 @@ import { MAX_TOTAL_SIZE, IMAGE_FORMATS } from '@/lib/constants';
 
 export function ConversionProcessorOptimized() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
-  const [outputFormat, setOutputFormat] = useState('webp');
+  const [outputFormat, setOutputFormat] = useState(() => {
+    if (typeof window === 'undefined') return 'webp';
+    return localStorage.getItem('opti-format') ?? 'webp';
+  });
   const [processing, setProcessing] = useState(false);
   const processingQueue = useRef(new ProcessingQueue());
   const zipRef = useRef<JSZip | null>(null);
+
+  // Persist format preference
+  useEffect(() => {
+    localStorage.setItem('opti-format', outputFormat);
+  }, [outputFormat]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -326,6 +334,14 @@ export function ConversionProcessorOptimized() {
     });
   };
 
+  const resetImageStatus = useCallback((id: string) => {
+    setImages((prev) =>
+      prev.map((img) =>
+        img.id === id ? { ...img, status: 'pending' as const, error: undefined, progress: 0 } : img
+      )
+    );
+  }, []);
+
   const clearAllImages = useCallback(() => {
     images.forEach(img => {
       MemoryManager.revokeObjectURL(img.previewUrl);
@@ -360,6 +376,7 @@ export function ConversionProcessorOptimized() {
             key={image.id}
             image={image}
             onRemove={removeImage}
+            onRetry={image.status === 'error' ? () => resetImageStatus(image.id) : undefined}
           />
         ))}
       </div>

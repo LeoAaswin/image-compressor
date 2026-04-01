@@ -9,7 +9,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { SimpleCounterDisplay } from '@/components/simple-counter-display';
 
-const poppins = Poppins({ 
+const poppins = Poppins({
   subsets: ['latin'],
   variable: '--font-poppins',
   display: 'swap',

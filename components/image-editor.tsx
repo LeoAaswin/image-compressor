@@ -6,12 +6,11 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  RotateCcw, RotateCw, Download, X, Save,
+  RotateCcw, RotateCw, Download, X, Save, Check,
   FlipHorizontal, FlipVertical, RefreshCw, Loader2,
   Crop as CropIcon, Sliders, FileOutput,
 } from 'lucide-react';
@@ -24,6 +23,7 @@ interface ImageEditorProps {
 }
 
 type OutputFormat = 'jpeg' | 'png' | 'webp';
+type MobileTab = 'crop' | 'rotate' | 'adjust' | 'export';
 
 interface AspectPreset {
   label: string;
@@ -42,60 +42,69 @@ interface SocialPreset {
 
 const ASPECT_PRESETS: AspectPreset[] = [
   { label: 'Free', value: undefined, w: 1, h: 1 },
-  { label: '1:1', value: 1, w: 1, h: 1 },
-  { label: '16:9', value: 16 / 9, w: 16, h: 9 },
-  { label: '9:16', value: 9 / 16, w: 9, h: 16 },
-  { label: '4:3', value: 4 / 3, w: 4, h: 3 },
-  { label: '3:2', value: 3 / 2, w: 3, h: 2 },
-  { label: '2:3', value: 2 / 3, w: 2, h: 3 },
-  { label: '3:1', value: 3, w: 3, h: 1 },
+  { label: '1:1',  value: 1,         w: 1, h: 1 },
+  { label: '16:9', value: 16 / 9,    w: 16, h: 9 },
+  { label: '9:16', value: 9 / 16,    w: 9,  h: 16 },
+  { label: '4:3',  value: 4 / 3,     w: 4,  h: 3 },
+  { label: '3:2',  value: 3 / 2,     w: 3,  h: 2 },
+  { label: '2:3',  value: 2 / 3,     w: 2,  h: 3 },
+  { label: '3:1',  value: 3,         w: 3,  h: 1 },
 ];
 
 const SOCIAL_PRESETS: SocialPreset[] = [
-  { label: 'Square', sub: '1080×1080', w: 1080, h: 1080, ratio: 1 },
-  { label: 'IG Story', sub: '1080×1920', w: 1080, h: 1920, ratio: 9 / 16 },
-  { label: 'FB Cover', sub: '1200×675', w: 1200, h: 675, ratio: 16 / 9 },
-  { label: 'YT Thumb', sub: '1280×720', w: 1280, h: 720, ratio: 16 / 9 },
-  { label: 'LinkedIn', sub: '1200×628', w: 1200, h: 628, ratio: 1.91 },
-  { label: 'Pinterest', sub: '1000×1500', w: 1000, h: 1500, ratio: 2 / 3 },
-  { label: 'Twitter', sub: '1500×500', w: 1500, h: 500, ratio: 3 },
+  { label: 'Square',   sub: '1080×1080', w: 1080, h: 1080, ratio: 1       },
+  { label: 'IG Story', sub: '1080×1920', w: 1080, h: 1920, ratio: 9 / 16  },
+  { label: 'FB Cover', sub: '1200×675',  w: 1200, h: 675,  ratio: 16 / 9  },
+  { label: 'YT Thumb', sub: '1280×720',  w: 1280, h: 720,  ratio: 16 / 9  },
+  { label: 'LinkedIn', sub: '1200×628',  w: 1200, h: 628,  ratio: 1.91    },
+  { label: 'Pinterest',sub: '1000×1500', w: 1000, h: 1500, ratio: 2 / 3   },
+  { label: 'Twitter',  sub: '1500×500',  w: 1500, h: 500,  ratio: 3       },
 ];
 
 export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
-  // Crop state
+  // ── Crop
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [aspect, setAspect] = useState<number | undefined>(undefined);
   const [activeAspect, setActiveAspect] = useState('Free');
 
-  // Flip (applied at export, previewed via CSS)
+  // ── Transform
   const [flipH, setFlipH] = useState(false);
   const [flipV, setFlipV] = useState(false);
 
-  // Adjustments: range -100 to +100, maps to CSS 0%–200% (0 = 100%)
+  // ── Adjustments  (-100 → +100)
   const [brightness, setBrightness] = useState(0);
-  const [contrast, setContrast] = useState(0);
+  const [contrast,   setContrast]   = useState(0);
   const [saturation, setSaturation] = useState(0);
 
-  // Export
-  const [outputWidth, setOutputWidth] = useState(0);
-  const [outputHeight, setOutputHeight] = useState(0);
-  const [outputFormat, setOutputFormat] = useState<OutputFormat>('jpeg');
+  // ── Export
+  const [outputWidth,   setOutputWidth]   = useState(0);
+  const [outputHeight,  setOutputHeight]  = useState(0);
+  const [outputFormat,  setOutputFormat]  = useState<OutputFormat>('jpeg');
   const [outputQuality, setOutputQuality] = useState(92);
 
-  // UI
-  const [saving, setSaving] = useState(false);
+  // ── UI
+  const [saving,   setSaving]   = useState(false);
   const [rotating, setRotating] = useState(false);
   const [naturalDims, setNaturalDims] = useState({ w: 0, h: 0 });
 
-  const imgRef = useRef<HTMLImageElement>(null);
+  // ── Mobile
+  const [isMobile, setIsMobile] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>('crop');
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const imgRef    = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Use refs + effect to safely handle React Strict Mode double-mount:
-  // useState lazy initializer won't re-run after the cleanup/remount cycle,
-  // so blob URLs must be created inside useEffect.
   const originalImgSrcRef = useRef('');
-  const blobUrlsRef = useRef<Set<string>>(new Set());
+  const blobUrlsRef       = useRef<Set<string>>(new Set());
   const [workingImgSrc, setWorkingImgSrc] = useState('');
 
   useEffect(() => {
@@ -103,8 +112,6 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
     originalImgSrcRef.current = url;
     blobUrlsRef.current.add(url);
     setWorkingImgSrc(url);
-
-    // Capture ref value at effect time so the cleanup uses the correct set
     const blobUrls = blobUrlsRef.current;
     return () => {
       blobUrls.forEach(u => URL.revokeObjectURL(u));
@@ -113,7 +120,6 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
     };
   }, [image]);
 
-  // Close on Escape key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
@@ -121,7 +127,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   }, [onClose]);
 
   const initCrop = useCallback((w: number, h: number, ratio?: number) => {
-    const r = ratio ?? w / h;
+    const r  = ratio ?? w / h;
     const pc = makeAspectCrop({ unit: '%', width: 90 }, r, w, h);
     const px = convertToPixelCrop(pc, w, h);
     setCrop(px);
@@ -131,43 +137,39 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
     setNaturalDims({ w: naturalWidth, h: naturalHeight });
-    // outputWidth/outputHeight stay 0 → output = crop dimensions (no stretching)
     setOutputWidth(0);
     setOutputHeight(0);
     initCrop(width, height);
   }, [initCrop]);
 
-  // Derive live crop dimensions in natural pixels for display
   const cropNaturalDims = (() => {
     if (!completedCrop || !imgRef.current || !naturalDims.w) return null;
     const sx = naturalDims.w / imgRef.current.width;
     const sy = naturalDims.h / imgRef.current.height;
-    const tw = outputWidth > 0 ? outputWidth : Math.round(completedCrop.width * sx);
+    const tw = outputWidth  > 0 ? outputWidth  : Math.round(completedCrop.width  * sx);
     const th = outputHeight > 0 ? outputHeight : Math.round(completedCrop.height * sy);
     return { w: tw, h: th };
   })();
 
-  // CSS filter string for live preview
   const cssFilter = [
     brightness !== 0 && `brightness(${100 + brightness}%)`,
-    contrast !== 0 && `contrast(${100 + contrast}%)`,
+    contrast   !== 0 && `contrast(${100 + contrast}%)`,
     saturation !== 0 && `saturate(${100 + saturation}%)`,
   ].filter(Boolean).join(' ') || undefined;
 
-  // Bake rotation into a new blob URL so ReactCrop coordinates are always correct
   const rotateBy = useCallback(async (deg: number) => {
     if (!imgRef.current || rotating) return;
     setRotating(true);
     try {
-      const img = imgRef.current;
-      const rad = (deg * Math.PI) / 180;
-      const sin = Math.abs(Math.sin(rad));
-      const cos = Math.abs(Math.cos(rad));
+      const img  = imgRef.current;
+      const rad  = (deg * Math.PI) / 180;
+      const sin  = Math.abs(Math.sin(rad));
+      const cos  = Math.abs(Math.cos(rad));
       const newW = Math.round(img.naturalWidth * cos + img.naturalHeight * sin);
       const newH = Math.round(img.naturalWidth * sin + img.naturalHeight * cos);
 
       const canvas = document.createElement('canvas');
-      canvas.width = newW;
+      canvas.width  = newW;
       canvas.height = newH;
       const ctx = canvas.getContext('2d')!;
       ctx.translate(newW / 2, newH / 2);
@@ -212,63 +214,46 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   }, []);
 
   const resetAll = useCallback(() => {
-    // Restore original image src
     if (originalImgSrcRef.current && workingImgSrc !== originalImgSrcRef.current) {
       setWorkingImgSrc(originalImgSrcRef.current);
     }
-    setFlipH(false);
-    setFlipV(false);
-    setBrightness(0);
-    setContrast(0);
-    setSaturation(0);
-    setOutputWidth(0);
-    setOutputHeight(0);
-    setOutputFormat('jpeg');
-    setOutputQuality(92);
-    setActiveAspect('Free');
-    setAspect(undefined);
-    setCrop(undefined);
-    setCompletedCrop(undefined);
+    setFlipH(false); setFlipV(false);
+    setBrightness(0); setContrast(0); setSaturation(0);
+    setOutputWidth(0); setOutputHeight(0);
+    setOutputFormat('jpeg'); setOutputQuality(92);
+    setActiveAspect('Free'); setAspect(undefined);
+    setCrop(undefined); setCompletedCrop(undefined);
   }, [workingImgSrc]);
 
   const drawToCanvas = useCallback((canvas: HTMLCanvasElement, img: HTMLImageElement): boolean => {
     const ctx = canvas.getContext('2d');
     if (!ctx || !completedCrop) return false;
 
-    const scaleX = img.naturalWidth / img.width;
+    const scaleX = img.naturalWidth  / img.width;
     const scaleY = img.naturalHeight / img.height;
-    const cropX = completedCrop.x * scaleX;
-    const cropY = completedCrop.y * scaleY;
-    const cropW = completedCrop.width * scaleX;
-    const cropH = completedCrop.height * scaleY;
-
-    // Use crop size if no custom output size — this prevents stretching
-    const targetW = outputWidth > 0 ? outputWidth : Math.round(cropW);
+    const cropX  = completedCrop.x * scaleX;
+    const cropY  = completedCrop.y * scaleY;
+    const cropW  = completedCrop.width  * scaleX;
+    const cropH  = completedCrop.height * scaleY;
+    const targetW = outputWidth  > 0 ? outputWidth  : Math.round(cropW);
     const targetH = outputHeight > 0 ? outputHeight : Math.round(cropH);
 
-    canvas.width = targetW;
+    canvas.width  = targetW;
     canvas.height = targetH;
 
-    // White fill for JPEG (no transparency support)
-    if (outputFormat === 'jpeg') {
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, targetW, targetH);
-    }
+    if (outputFormat === 'jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, targetW, targetH); }
 
-    // Apply adjustment filters
     const filterParts: string[] = [];
     if (brightness !== 0) filterParts.push(`brightness(${100 + brightness}%)`);
-    if (contrast !== 0) filterParts.push(`contrast(${100 + contrast}%)`);
+    if (contrast   !== 0) filterParts.push(`contrast(${100 + contrast}%)`);
     if (saturation !== 0) filterParts.push(`saturate(${100 + saturation}%)`);
-    if (filterParts.length > 0) ctx.filter = filterParts.join(' ');
+    if (filterParts.length) ctx.filter = filterParts.join(' ');
 
     ctx.save();
     ctx.translate(flipH ? targetW : 0, flipV ? targetH : 0);
     ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
-    // Rotation is baked into workingImgSrc, so a simple drawImage is sufficient
     ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, targetW, targetH);
     ctx.restore();
-
     return true;
   }, [completedCrop, outputWidth, outputHeight, flipH, flipV, outputFormat, brightness, contrast, saturation]);
 
@@ -283,8 +268,8 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
       if (!ok) { toast.error('Failed to draw image'); return; }
 
       const mimeType = `image/${outputFormat}`;
-      const quality = outputFormat === 'png' ? undefined : outputQuality / 100;
-      const ext = outputFormat === 'jpeg' ? 'jpg' : outputFormat;
+      const quality  = outputFormat === 'png' ? undefined : outputQuality / 100;
+      const ext      = outputFormat === 'jpeg' ? 'jpg' : outputFormat;
       const baseName = image.name.replace(/\.[^.]+$/, '');
 
       const blob = await new Promise<Blob | null>(res =>
@@ -296,7 +281,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
 
       if (download) {
         const url = URL.createObjectURL(file);
-        const a = document.createElement('a');
+        const a   = document.createElement('a');
         a.href = url; a.download = file.name;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 5000);
@@ -313,22 +298,325 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   }, [drawToCanvas, completedCrop, outputFormat, outputQuality, image.name, onSave]);
 
   const hasAdjustments = brightness !== 0 || contrast !== 0 || saturation !== 0;
-  const hasTransforms = flipH || flipV || workingImgSrc !== originalImgSrcRef.current;
 
+  // ─────────────────────────────────────────────────
+  //  Shared canvas area
+  // ─────────────────────────────────────────────────
+  const canvasArea = (
+    <div
+      className="flex-1 min-h-0 flex items-center justify-center overflow-auto p-3 md:p-6"
+      style={{
+        backgroundImage: 'repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%)',
+        backgroundSize:  '24px 24px',
+      }}
+    >
+      {workingImgSrc && (
+        <ReactCrop
+          crop={crop}
+          onChange={(_, p) => setCrop(p)}
+          onComplete={c => setCompletedCrop(c)}
+          aspect={aspect}
+          minWidth={10}
+          minHeight={10}
+          keepSelection
+          className="shadow-2xl"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={imgRef}
+            src={workingImgSrc}
+            alt={`Edit preview of ${image.name}`}
+            onLoad={onImageLoad}
+            style={{
+              maxHeight: isMobile ? 'calc(100dvh - 252px)' : 'calc(100vh - 140px)',
+              maxWidth:  '100%',
+              objectFit: 'contain',
+              display:   'block',
+              transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
+              filter:    cssFilter,
+              transition: 'filter 0.15s, transform 0.15s',
+            }}
+          />
+        </ReactCrop>
+      )}
+      <canvas ref={canvasRef} className="hidden" />
+    </div>
+  );
+
+  // ─────────────────────────────────────────────────
+  //  MOBILE LAYOUT
+  // ─────────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 bg-black/95 flex flex-col z-50 overflow-hidden" role="dialog" aria-modal="true">
+
+        {/* ── Mobile Top Bar ── */}
+        <div className="flex items-center justify-between px-3 py-2 bg-zinc-900 border-b border-white/10 shrink-0 h-[44px]">
+          {/* Left: undo/reset + redo placeholder */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={resetAll}
+              className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Reset all edits"
+            >
+              <RotateCcw className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Close editor"
+            >
+              <X className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
+            </button>
+          </div>
+
+          {/* Center: filename */}
+          <span className="text-white/80 text-xs font-medium truncate max-w-[120px]">
+            {image.name}
+          </span>
+
+          {/* Right: Export/Save */}
+          <button
+            onClick={() => handleSave(false)}
+            disabled={saving || !completedCrop}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-semibold disabled:opacity-40 transition-colors"
+            aria-label="Save edits"
+          >
+            {saving
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Check className="w-4 h-4" />
+            }
+            Save
+          </button>
+        </div>
+
+        {/* ── Canvas ── */}
+        {canvasArea}
+
+        {/* ── Context-Specific Control Strip ── */}
+        <div className="shrink-0 bg-zinc-900 border-t border-white/10 overflow-y-auto max-h-[40vh]">
+
+          {/* CROP TAB STRIP */}
+          {activeMobileTab === 'crop' && (
+            <div className="px-4 pt-3 pb-2 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 text-[10px] font-semibold uppercase tracking-widest">Aspect Ratio</span>
+                <span className="text-primary text-xs font-medium">{activeAspect}</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {ASPECT_PRESETS.map(p => (
+                  <button
+                    key={p.label}
+                    onClick={() => handleAspectPreset(p)}
+                    aria-pressed={activeAspect === p.label}
+                    className={`flex-none flex flex-col items-center gap-1 px-3 py-2 rounded-lg border text-xs font-medium transition-colors ${
+                      activeAspect === p.label
+                        ? 'bg-primary/20 border-primary text-primary'
+                        : 'bg-zinc-800 border-zinc-700 text-zinc-400'
+                    }`}
+                  >
+                    <div
+                      className="bg-current opacity-60 rounded-sm"
+                      style={{
+                        width:  p.label === 'Free' ? 12 : Math.min(12, 12 * (p.w / Math.max(p.w, p.h))),
+                        height: p.label === 'Free' ? 12 : Math.min(12, 12 * (p.h / Math.max(p.w, p.h))),
+                      }}
+                    />
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              {/* Social presets horizontal */}
+              <div className="flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                {SOCIAL_PRESETS.map(p => (
+                  <button
+                    key={p.label}
+                    onClick={() => handleSocialPreset(p)}
+                    className="flex-none px-3 py-1.5 rounded-lg border bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors text-xs whitespace-nowrap"
+                  >
+                    {p.label} <span className="text-zinc-600 ml-1">{p.sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ROTATE TAB STRIP */}
+          {activeMobileTab === 'rotate' && (
+            <div className="px-4 pt-3 pb-2 space-y-3">
+              <span className="text-white/50 text-[10px] font-semibold uppercase tracking-widest">Rotate & Flip</span>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: '−90°', icon: <RotateCcw className="w-4 h-4" />, action: () => rotateBy(-90) },
+                  { label: '+90°', icon: <RotateCw  className="w-4 h-4" />, action: () => rotateBy(90)  },
+                  { label: 'Flip H', icon: <FlipHorizontal className="w-4 h-4" />, action: () => setFlipH(p => !p), active: flipH },
+                  { label: 'Flip V', icon: <FlipVertical   className="w-4 h-4" />, action: () => setFlipV(p => !p), active: flipV },
+                ].map(b => (
+                  <button
+                    key={b.label}
+                    onClick={b.action}
+                    disabled={rotating}
+                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs font-medium transition-colors ${
+                      b.active
+                        ? 'bg-primary/20 border-primary text-primary'
+                        : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                    }`}
+                  >
+                    {rotating && (b.label === '−90°' || b.label === '+90°')
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : b.icon
+                    }
+                    <span>{b.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ADJUST TAB STRIP */}
+          {activeMobileTab === 'adjust' && (
+            <div className="px-4 pt-3 pb-2 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 text-[10px] font-semibold uppercase tracking-widest">Adjustments</span>
+                {hasAdjustments && (
+                  <button
+                    onClick={() => { setBrightness(0); setContrast(0); setSaturation(0); }}
+                    className="text-[10px] text-zinc-500 hover:text-zinc-300 underline"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              {[
+                { key: 'brightness', label: 'BRIGHTNESS', value: brightness, set: setBrightness },
+                { key: 'contrast',   label: 'CONTRAST',   value: contrast,   set: setContrast   },
+                { key: 'saturation', label: 'SATURATION', value: saturation,  set: setSaturation },
+              ].map(({ key, label, value, set }) => (
+                <div key={key} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-zinc-500 tracking-widest">{label}</span>
+                    <span className={`text-xs font-mono tabular-nums ${value === 0 ? 'text-zinc-600' : value > 0 ? 'text-blue-400' : 'text-orange-400'}`}>
+                      {value > 0 ? '+' : ''}{value}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[value]}
+                    onValueChange={([v]) => set(v)}
+                    min={-100} max={100} step={1}
+                    className="[&_[role=slider]]:bg-white [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_[role=slider]]:border-0 [&_[role=slider]]:shadow-md"
+                    aria-label={label}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* EXPORT TAB STRIP */}
+          {activeMobileTab === 'export' && (
+            <div className="px-4 pt-3 pb-2 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-white/50 text-[10px] font-semibold uppercase tracking-widest">Export</span>
+                {cropNaturalDims && (
+                  <span className="text-zinc-500 text-[10px] font-mono">{cropNaturalDims.w} × {cropNaturalDims.h} px</span>
+                )}
+              </div>
+              {/* Format */}
+              <div className="grid grid-cols-3 gap-2">
+                {(['jpeg', 'png', 'webp'] as OutputFormat[]).map(fmt => (
+                  <button
+                    key={fmt}
+                    onClick={() => setOutputFormat(fmt)}
+                    aria-pressed={outputFormat === fmt}
+                    className={`py-2 rounded-lg border text-xs font-semibold uppercase transition-colors ${
+                      outputFormat === fmt
+                        ? 'bg-primary/20 border-primary text-primary'
+                        : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                    }`}
+                  >
+                    {fmt}
+                  </button>
+                ))}
+              </div>
+              {/* Quality */}
+              {outputFormat !== 'png' && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-zinc-500 tracking-widest">QUALITY</span>
+                    <span className="text-xs font-mono text-zinc-300">{outputQuality}%</span>
+                  </div>
+                  <Slider
+                    value={[outputQuality]}
+                    onValueChange={([v]) => setOutputQuality(v)}
+                    min={10} max={100} step={1}
+                    className="[&_[role=slider]]:bg-white [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_[role=slider]]:border-0"
+                    aria-label="Output quality"
+                  />
+                </div>
+              )}
+              {/* Download */}
+              <button
+                onClick={() => handleSave(true)}
+                disabled={saving || !completedCrop}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 hover:text-white text-sm font-medium transition-colors disabled:opacity-40"
+              >
+                <Download className="w-4 h-4" />
+                Download {outputFormat.toUpperCase()}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Mobile Bottom Tab Bar ── */}
+        <div className="shrink-0 flex items-center bg-zinc-950 border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
+          {([
+            { id: 'crop',   label: 'Crop',   icon: <CropIcon className="w-5 h-5" /> },
+            { id: 'rotate', label: 'Rotate', icon: <RotateCw className="w-5 h-5" /> },
+            { id: 'adjust', label: 'Adjust', icon: <Sliders  className="w-5 h-5" />, dot: hasAdjustments },
+            { id: 'export', label: 'Export', icon: <FileOutput className="w-5 h-5" /> },
+          ] as { id: MobileTab; label: string; icon: React.ReactNode; dot?: boolean }[]).map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveMobileTab(tab.id)}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${
+                activeMobileTab === tab.id
+                  ? 'text-primary'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+              aria-pressed={activeMobileTab === tab.id}
+              aria-label={tab.label}
+            >
+              <span className="relative">
+                {tab.icon}
+                {tab.dot && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                )}
+              </span>
+              <span className="text-[10px] font-medium leading-none">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────
+  //  DESKTOP LAYOUT
+  // ─────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 bg-black/95 flex flex-col z-50">
+    <div className="fixed inset-0 bg-black/95 flex flex-col z-50" role="dialog" aria-modal="true" aria-label={`Editing ${image.name}`}>
 
-      {/* Top Bar */}
+      {/* Desktop Top Bar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-zinc-900 shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="text-white font-semibold text-sm truncate max-w-[200px]">{image.name}</span>
+        <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+          <span className="text-white font-semibold text-sm truncate">{image.name}</span>
           {cropNaturalDims && (
-            <Badge variant="outline" className="font-mono text-xs text-zinc-300 border-zinc-600">
+            <Badge variant="outline" className="font-mono text-xs text-zinc-300 border-zinc-600 shrink-0">
               {cropNaturalDims.w} × {cropNaturalDims.h} px
             </Badge>
           )}
           {naturalDims.w > 0 && (
-            <span className="text-zinc-500 text-xs hidden sm:inline">
+            <span className="text-zinc-500 text-xs hidden lg:inline shrink-0">
               original: {naturalDims.w} × {naturalDims.h}
             </span>
           )}
@@ -336,60 +624,23 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
         <Button
           variant="ghost" size="icon"
           onClick={onClose}
-          className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+          aria-label="Close editor"
+          className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full shrink-0"
         >
           <X className="h-5 w-5" />
         </Button>
       </div>
 
-      {/* Main Content */}
+      {/* Desktop: canvas + sidebar */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Canvas Area */}
-        <div
-          className="flex-1 flex items-center justify-center overflow-auto p-6"
-          style={{
-            backgroundImage: 'repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%)',
-            backgroundSize: '24px 24px',
-          }}
-        >
-          {workingImgSrc && (
-            <ReactCrop
-              crop={crop}
-              onChange={(_, p) => setCrop(p)}
-              onComplete={c => setCompletedCrop(c)}
-              aspect={aspect}
-              minWidth={10}
-              minHeight={10}
-              keepSelection
-              className="shadow-2xl"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                ref={imgRef}
-                src={workingImgSrc}
-                alt="Edit preview"
-                onLoad={onImageLoad}
-                style={{
-                  maxHeight: 'calc(100vh - 140px)',
-                  maxWidth: '100%',
-                  objectFit: 'contain',
-                  display: 'block',
-                  transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
-                  filter: cssFilter,
-                  transition: 'filter 0.15s, transform 0.15s',
-                }}
-              />
-            </ReactCrop>
-          )}
-          <canvas ref={canvasRef} className="hidden" />
-        </div>
+        {/* Canvas */}
+        {canvasArea}
 
-        {/* Right Sidebar */}
+        {/* Desktop Right Sidebar */}
         <div className="w-72 bg-zinc-900 border-l border-white/10 flex flex-col overflow-hidden shrink-0">
           <Tabs defaultValue="crop" className="flex flex-col flex-1 overflow-hidden">
 
-            {/* Tab Bar */}
             <TabsList className="grid grid-cols-3 rounded-none border-b border-white/10 bg-zinc-900 h-11 shrink-0">
               <TabsTrigger value="crop" className="data-[state=active]:bg-zinc-800 text-zinc-400 data-[state=active]:text-white rounded-none text-xs gap-1.5">
                 <CropIcon className="w-3.5 h-3.5" /> Crop
@@ -403,103 +654,70 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
               </TabsTrigger>
             </TabsList>
 
-            {/* ── TAB: CROP ── */}
+            {/* ── CROP TAB ── */}
             <TabsContent value="crop" className="flex-1 overflow-y-auto p-4 space-y-5 mt-0">
-
-              {/* Rotate & Flip */}
               <section className="space-y-2.5">
                 <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Rotate & Flip</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline" size="sm"
-                    onClick={() => rotateBy(-90)}
-                    disabled={rotating}
-                    className="bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white"
-                  >
-                    {rotating ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5 mr-1" />}
-                    −90°
+                  <Button variant="outline" size="sm" onClick={() => rotateBy(-90)} disabled={rotating}
+                    className="bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white">
+                    {rotating ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5 mr-1" />} −90°
                   </Button>
-                  <Button
-                    variant="outline" size="sm"
-                    onClick={() => rotateBy(90)}
-                    disabled={rotating}
-                    className="bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white"
-                  >
-                    {rotating ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <RotateCw className="w-3.5 h-3.5 mr-1" />}
-                    +90°
+                  <Button variant="outline" size="sm" onClick={() => rotateBy(90)} disabled={rotating}
+                    className="bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white">
+                    {rotating ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <RotateCw className="w-3.5 h-3.5 mr-1" />} +90°
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => setFlipH(p => !p)}
-                    variant={flipH ? 'default' : 'outline'}
-                    className={flipH ? '' : 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white'}
-                  >
+                  <Button size="sm" onClick={() => setFlipH(p => !p)} variant={flipH ? 'default' : 'outline'}
+                    className={flipH ? '' : 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white'}>
                     <FlipHorizontal className="w-3.5 h-3.5 mr-1" /> Flip H
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => setFlipV(p => !p)}
-                    variant={flipV ? 'default' : 'outline'}
-                    className={flipV ? '' : 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white'}
-                  >
+                  <Button size="sm" onClick={() => setFlipV(p => !p)} variant={flipV ? 'default' : 'outline'}
+                    className={flipV ? '' : 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white'}>
                     <FlipVertical className="w-3.5 h-3.5 mr-1" /> Flip V
                   </Button>
                 </div>
               </section>
 
-              {/* Aspect Ratio */}
               <section className="space-y-2.5">
                 <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Aspect Ratio</p>
                 <div className="grid grid-cols-4 gap-1.5">
                   {ASPECT_PRESETS.map(p => (
-                    <button
-                      key={p.label}
-                      onClick={() => handleAspectPreset(p)}
-                      className={`flex flex-col items-center gap-1 p-1.5 rounded-md border text-[10px] font-medium transition-colors
-                        ${activeAspect === p.label
+                    <button key={p.label} onClick={() => handleAspectPreset(p)} aria-pressed={activeAspect === p.label}
+                      className={`flex flex-col items-center gap-1 p-1.5 rounded-md border text-[10px] font-medium transition-colors ${
+                        activeAspect === p.label
                           ? 'bg-primary/20 border-primary text-primary'
                           : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
-                        }`}
-                    >
-                      <div
-                        className="bg-current opacity-60 rounded-sm"
-                        style={{
-                          width: p.label === 'Free' ? 14 : Math.min(14, 14 * (p.w / Math.max(p.w, p.h))),
-                          height: p.label === 'Free' ? 14 : Math.min(14, 14 * (p.h / Math.max(p.w, p.h))),
-                        }}
-                      />
+                      }`}>
+                      <div className="bg-current opacity-60 rounded-sm" style={{
+                        width:  p.label === 'Free' ? 14 : Math.min(14, 14 * (p.w / Math.max(p.w, p.h))),
+                        height: p.label === 'Free' ? 14 : Math.min(14, 14 * (p.h / Math.max(p.w, p.h))),
+                      }} />
                       {p.label}
                     </button>
                   ))}
                 </div>
               </section>
 
-              {/* Social Presets */}
               <section className="space-y-2.5">
                 <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Social Presets</p>
                 <div className="grid grid-cols-1 gap-1">
                   {SOCIAL_PRESETS.map(p => (
-                    <button
-                      key={p.label}
-                      onClick={() => handleSocialPreset(p)}
-                      className="flex items-center justify-between px-3 py-2 rounded-md border bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors text-xs"
-                    >
+                    <button key={p.label} onClick={() => handleSocialPreset(p)}
+                      className="flex items-center justify-between px-3 py-2 rounded-md border bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors text-xs">
                       <span className="font-medium">{p.label}</span>
                       <span className="text-zinc-500">{p.sub}</span>
                     </button>
                   ))}
                 </div>
               </section>
-
             </TabsContent>
 
-            {/* ── TAB: ADJUST ── */}
+            {/* ── ADJUST TAB ── */}
             <TabsContent value="adjust" className="flex-1 overflow-y-auto p-4 space-y-5 mt-0">
-
               {[
                 { label: 'Brightness', icon: '☀', value: brightness, set: setBrightness },
-                { label: 'Contrast', icon: '◑', value: contrast, set: setContrast },
-                { label: 'Saturation', icon: '◎', value: saturation, set: setSaturation },
+                { label: 'Contrast',   icon: '◑', value: contrast,   set: setContrast   },
+                { label: 'Saturation', icon: '◎', value: saturation,  set: setSaturation },
               ].map(({ label, icon, value, set }) => (
                 <section key={label} className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -509,162 +727,108 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
                         {value > 0 ? '+' : ''}{value}
                       </span>
                       {value !== 0 && (
-                        <button
-                          onClick={() => set(0)}
-                          className="text-[10px] text-zinc-500 hover:text-zinc-300 underline"
-                        >
-                          reset
-                        </button>
+                        <button onClick={() => set(0)} aria-label={`Reset ${label}`}
+                          className="text-[10px] text-zinc-500 hover:text-zinc-300 underline">reset</button>
                       )}
                     </div>
                   </div>
-                  <Slider
-                    value={[value]}
-                    onValueChange={([v]) => set(v)}
-                    min={-100} max={100} step={1}
-                    className="[&_[role=slider]]:bg-zinc-200"
-                  />
+                  <Slider value={[value]} onValueChange={([v]) => set(v)} min={-100} max={100} step={1}
+                    className="[&_[role=slider]]:bg-zinc-200" aria-label={label} />
                   <div className="flex justify-between text-[10px] text-zinc-600">
                     <span>-100</span><span>0</span><span>+100</span>
                   </div>
                 </section>
               ))}
-
               {hasAdjustments && (
-                <Button
-                  variant="ghost" size="sm"
+                <Button variant="ghost" size="sm"
                   onClick={() => { setBrightness(0); setContrast(0); setSaturation(0); }}
-                  className="w-full text-zinc-400 hover:text-white hover:bg-zinc-800"
-                >
+                  className="w-full text-zinc-400 hover:text-white hover:bg-zinc-800">
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Reset All Adjustments
                 </Button>
               )}
-
             </TabsContent>
 
-            {/* ── TAB: EXPORT ── */}
+            {/* ── EXPORT TAB ── */}
             <TabsContent value="export" className="flex-1 overflow-y-auto p-4 space-y-5 mt-0">
-
-              {/* Format */}
               <section className="space-y-2">
                 <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Format</p>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(['jpeg', 'png', 'webp'] as OutputFormat[]).map(fmt => (
-                    <button
-                      key={fmt}
-                      onClick={() => setOutputFormat(fmt)}
-                      className={`py-2 rounded-md border text-xs font-medium uppercase transition-colors
-                        ${outputFormat === fmt
+                    <button key={fmt} onClick={() => setOutputFormat(fmt)} aria-pressed={outputFormat === fmt}
+                      className={`py-2 rounded-md border text-xs font-medium uppercase transition-colors ${
+                        outputFormat === fmt
                           ? 'bg-primary/20 border-primary text-primary'
                           : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
-                        }`}
-                    >
-                      {fmt}
-                    </button>
+                      }`}>{fmt}</button>
                   ))}
                 </div>
                 <p className="text-[10px] text-zinc-500">
                   {outputFormat === 'jpeg' && 'Best for photos. No transparency.'}
-                  {outputFormat === 'png' && 'Lossless. Supports transparency.'}
+                  {outputFormat === 'png'  && 'Lossless. Supports transparency.'}
                   {outputFormat === 'webp' && 'Modern format. Smallest file size.'}
                 </p>
               </section>
 
-              {/* Quality */}
               {outputFormat !== 'png' && (
                 <section className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Quality</p>
                     <span className="text-xs font-mono text-zinc-300">{outputQuality}%</span>
                   </div>
-                  <Slider
-                    value={[outputQuality]}
-                    onValueChange={([v]) => setOutputQuality(v)}
-                    min={10} max={100} step={1}
-                    className="[&_[role=slider]]:bg-zinc-200"
-                  />
+                  <Slider value={[outputQuality]} onValueChange={([v]) => setOutputQuality(v)}
+                    min={10} max={100} step={1} className="[&_[role=slider]]:bg-zinc-200" aria-label="Output quality" />
                 </section>
               )}
 
-              {/* Custom Output Size */}
               <section className="space-y-2">
                 <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Custom Output Size</p>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
                     <Label className="text-[10px] text-zinc-500">Width (px)</Label>
-                    <Input
-                      type="number" min={1}
-                      value={outputWidth || ''}
+                    <Input type="number" min={1} value={outputWidth || ''}
                       onChange={e => setOutputWidth(Number(e.target.value))}
                       placeholder={String(cropNaturalDims?.w ?? 'auto')}
-                      className="bg-zinc-800 border-zinc-700 text-zinc-200 text-sm h-8"
-                    />
+                      className="bg-zinc-800 border-zinc-700 text-zinc-200 text-sm h-8" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] text-zinc-500">Height (px)</Label>
-                    <Input
-                      type="number" min={1}
-                      value={outputHeight || ''}
+                    <Input type="number" min={1} value={outputHeight || ''}
                       onChange={e => setOutputHeight(Number(e.target.value))}
                       placeholder={String(cropNaturalDims?.h ?? 'auto')}
-                      className="bg-zinc-800 border-zinc-700 text-zinc-200 text-sm h-8"
-                    />
+                      className="bg-zinc-800 border-zinc-700 text-zinc-200 text-sm h-8" />
                   </div>
                 </div>
-                <p className="text-[10px] text-zinc-500">
-                  Leave empty to use exact crop dimensions
-                </p>
                 {(outputWidth > 0 || outputHeight > 0) && (
-                  <button
-                    onClick={() => { setOutputWidth(0); setOutputHeight(0); }}
-                    className="text-[10px] text-zinc-500 hover:text-zinc-300 underline"
-                  >
-                    Clear custom size
-                  </button>
+                  <button onClick={() => { setOutputWidth(0); setOutputHeight(0); }}
+                    className="text-[10px] text-zinc-500 hover:text-zinc-300 underline">Clear custom size</button>
                 )}
               </section>
 
-              {/* Output summary */}
               {cropNaturalDims && (
                 <div className="bg-zinc-800 rounded-md p-3 space-y-1">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Output Preview</p>
-                  <p className="text-sm font-mono text-zinc-200">
-                    {cropNaturalDims.w} × {cropNaturalDims.h} px
-                  </p>
+                  <p className="text-sm font-mono text-zinc-200">{cropNaturalDims.w} × {cropNaturalDims.h} px</p>
                   <p className="text-[10px] text-zinc-500">
-                    {outputFormat.toUpperCase()}
-                    {outputFormat !== 'png' && ` · ${outputQuality}% quality`}
+                    {outputFormat.toUpperCase()}{outputFormat !== 'png' && ` · ${outputQuality}% quality`}
                   </p>
                 </div>
               )}
-
             </TabsContent>
           </Tabs>
 
-          {/* Bottom Action Bar */}
+          {/* Desktop Bottom Action Bar */}
           <div className="p-3 border-t border-white/10 space-y-2 shrink-0 bg-zinc-900">
-            <Button
-              variant="ghost" size="sm"
-              onClick={resetAll}
-              className="w-full text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 text-xs"
-            >
+            <Button variant="ghost" size="sm" onClick={resetAll}
+              className="w-full text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 text-xs">
               <RefreshCw className="w-3 h-3 mr-1.5" /> Reset All
             </Button>
             <div className="grid grid-cols-2 gap-2">
-              <Button
-                onClick={() => handleSave(false)}
-                disabled={saving || !completedCrop}
-                className="text-sm"
-              >
+              <Button onClick={() => handleSave(false)} disabled={saving || !completedCrop} className="text-sm">
                 {saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Save className="w-4 h-4 mr-1.5" />}
                 Save
               </Button>
-              <Button
-                variant="secondary"
-                onClick={() => handleSave(true)}
-                disabled={saving || !completedCrop}
-                className="text-sm bg-zinc-700 hover:bg-zinc-600 text-zinc-200"
-              >
+              <Button variant="secondary" onClick={() => handleSave(true)} disabled={saving || !completedCrop}
+                className="text-sm bg-zinc-700 hover:bg-zinc-600 text-zinc-200">
                 {saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Download className="w-4 h-4 mr-1.5" />}
                 Download
               </Button>
