@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
+export const runtime = 'edge';
+
 const STATS_KEY = "opti-pix:stats";
 
 // Hardcoded fallback stats if db is empty or disconnected
