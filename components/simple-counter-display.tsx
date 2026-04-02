@@ -138,13 +138,24 @@ export function SimpleCounterDisplay() {
   useEffect(() => {
     setMounted(true);
     
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      setCounts(prev => ({
-        totalFiles: prev.totalFiles + Math.floor(Math.random() * 3) + 1,
-        totalSizeBytes: prev.totalSizeBytes + (Math.random() * 5 + 1) * 1024 * 1024
-      }));
-    }, 5000);
+    // Fetch real-time stats from the API
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setCounts(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch processing stats', error);
+      }
+    };
+
+    // Initial fetch
+    fetchStats();
+
+    // Poll for updates every 10 seconds
+    const interval = setInterval(fetchStats, 10000);
 
     return () => clearInterval(interval);
   }, []);

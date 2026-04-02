@@ -7,10 +7,5 @@
     ],
     "assets": {
         "directory": ".vercel/output/static"
-    },
-    "vars": {
-        "NEXT_PUBLIC_SITE_NAME": "OptiPix",
-        "NEXT_PUBLIC_SITE_URL": "https://optipix.pages.dev",
-        "REMOVE_BG_API_KEY": "qQhG7fptH4NJq6hXXuV1Psen"
     }
 }

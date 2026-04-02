@@ -27,6 +27,15 @@ export function Dropzone({ onDrop }: DropzoneProps) {
     }
     try {
       const normalized = await normalizeImageFiles(acceptedFiles);
+      
+      // Track stats in the background (fire-and-forget, non-blocking)
+      const totalSize = acceptedFiles.reduce((acc, file) => acc + file.size, 0);
+      fetch('/api/stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filesCount: acceptedFiles.length, bytesCount: totalSize })
+      }).catch(console.error);
+      
       onDrop(normalized);
     } catch (err) {
       console.error('HEIC conversion error:', err);
