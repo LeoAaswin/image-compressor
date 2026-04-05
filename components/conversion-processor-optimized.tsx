@@ -6,6 +6,7 @@ import imageCompression from 'browser-image-compression';
 import JSZip from 'jszip';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dropzone } from '@/components/dropzone';
 import { ImageCardEnhanced } from '@/components/image-card-enhanced';
 import { FormatSelector } from '@/components/format-selector';
@@ -16,6 +17,7 @@ import { MAX_TOTAL_SIZE, IMAGE_FORMATS } from '@/lib/constants';
 
 export function ConversionProcessorOptimized() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [outputFormat, setOutputFormat] = useState(() => {
     if (typeof window === 'undefined') return 'webp';
     return localStorage.getItem('opti-format') ?? 'webp';
@@ -75,10 +77,34 @@ export function ConversionProcessorOptimized() {
       }
       return prev.filter((img) => img.id !== id);
     });
+    setSelectedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
   }, []);
 
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleDownloadSingle = useCallback((id: string) => {
+    const image = images.find(img => img.id === id);
+    if (!image?.processedUrl) return;
+    const base = image.originalFile.name.replace(/\.[^.]+$/, '');
+    const a = document.createElement('a');
+    a.href = image.processedUrl;
+    a.download = `${base}.${outputFormat}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [images, outputFormat]);
+
   const processImages = useCallback(async () => {
-    const pendingImages = images.filter(img => img.status === 'pending' || img.status === 'error');
+    const pendingImages = images.filter(img =>
+      (img.status === 'pending' || img.status === 'error') &&
+      (selectedIds.size === 0 || selectedIds.has(img.id))
+    );
     if (pendingImages.length === 0) return;
 
     setProcessing(true);
@@ -350,6 +376,7 @@ export function ConversionProcessorOptimized() {
       }
     });
     setImages([]);
+    setSelectedIds(new Set());
   }, [images]);
 
   const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
@@ -370,6 +397,19 @@ export function ConversionProcessorOptimized() {
 
       <Dropzone onDrop={onDrop} />
 
+      {images.length > 0 && (
+        <div className="flex items-center gap-2 text-sm">
+          <Checkbox
+            id="select-all-convert"
+            checked={selectedIds.size === images.length && images.length > 0 ? true : selectedIds.size > 0 ? 'indeterminate' : false}
+            onCheckedChange={(checked) => setSelectedIds(checked === true ? new Set(images.map(i => i.id)) : new Set())}
+          />
+          <label htmlFor="select-all-convert" className="text-muted-foreground cursor-pointer">
+            {selectedIds.size === 0 ? 'Select all' : `${selectedIds.size} selected`}
+          </label>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {images.map((image) => (
           <ImageCardEnhanced
@@ -377,6 +417,9 @@ export function ConversionProcessorOptimized() {
             image={image}
             onRemove={removeImage}
             onRetry={image.status === 'error' ? () => resetImageStatus(image.id) : undefined}
+            onDownload={handleDownloadSingle}
+            isSelected={selectedIds.has(image.id)}
+            onToggleSelect={toggleSelect}
           />
         ))}
       </div>
@@ -451,8 +494,12 @@ export function ConversionProcessorOptimized() {
               ) : (
                 <>
                   <Download className="w-4 h-4 mr-2 shrink-0" />
-                  <span className="hidden sm:inline">{pendingCount < images.length ? 'Convert Remaining' : 'Convert & Download'}</span>
-                  <span className="sm:hidden">{pendingCount < images.length ? 'Convert Rest' : 'Convert'}</span>
+                  <span className="hidden sm:inline">
+                    {selectedIds.size > 0 ? `Convert Selected (${selectedIds.size})` : pendingCount < images.length ? 'Convert Remaining' : 'Convert & Download'}
+                  </span>
+                  <span className="sm:hidden">
+                    {selectedIds.size > 0 ? `Convert (${selectedIds.size})` : 'Convert'}
+                  </span>
                 </>
               )}
             </Button>

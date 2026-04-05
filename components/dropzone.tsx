@@ -4,7 +4,7 @@ import { useDropzone } from "react-dropzone";
 import { Upload, Image as ImageIcon, FileImage, Zap } from "lucide-react";
 import { MAX_FILE_SIZE } from "@/lib/constants";
 import { formatFileSize as formatSize } from "@/lib/memory-utils";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { normalizeImageFiles } from "@/lib/heic-utils";
 import { toast } from "sonner";
 
@@ -42,6 +42,23 @@ export function Dropzone({ onDrop }: DropzoneProps) {
       toast.error('Failed to convert HEIC file. Please check the browser console for details.');
     }
   }, [onDrop]);
+
+  useEffect(() => {
+    const handlePaste = async (event: ClipboardEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+      const items = Array.from(event.clipboardData?.items ?? []);
+      const imageFiles = items
+        .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+        .map(item => item.getAsFile())
+        .filter((f): f is File => f !== null);
+      if (imageFiles.length > 0) {
+        await handleDrop(imageFiles);
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [handleDrop]);
 
   const { getRootProps, getInputProps, isDragActive, fileRejections } =
     useDropzone({
@@ -142,6 +159,7 @@ export function Dropzone({ onDrop }: DropzoneProps) {
             <span className="text-primary font-medium underline">
               tap to browse
             </span>
+            {" "}or <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted border rounded">Ctrl+V</kbd> to paste
           </p>
 
           {/* File info */}

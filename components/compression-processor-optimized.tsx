@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dropzone } from '@/components/dropzone';
 import { ImageCardEnhanced } from '@/components/image-card-enhanced';
 import { ProcessedImage } from '@/lib/types';
@@ -17,6 +18,7 @@ import { MAX_TOTAL_SIZE } from '@/lib/constants';
 
 export function CompressionProcessorOptimized() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [quality, setQuality] = useState(() => {
     if (typeof window === 'undefined') return 75;
     return Number(localStorage.getItem('opti-quality') ?? 75);
@@ -77,11 +79,36 @@ export function CompressionProcessorOptimized() {
       }
       return prev.filter((img) => img.id !== id);
     });
+    setSelectedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
   }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleDownloadSingle = useCallback((id: string) => {
+    const image = images.find(img => img.id === id);
+    if (!image?.processedUrl) return;
+    const ext = image.originalFile.name.split('.').pop();
+    const base = image.originalFile.name.replace(/\.[^.]+$/, '');
+    const a = document.createElement('a');
+    a.href = image.processedUrl;
+    a.download = `${base}-compressed.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [images]);
 
   const processImages = useCallback(async () => {
     // Only process images that haven't been completed yet
-    const pendingImages = images.filter(img => img.status === 'pending' || img.status === 'error');
+    const pendingImages = images.filter(img =>
+      (img.status === 'pending' || img.status === 'error') &&
+      (selectedIds.size === 0 || selectedIds.has(img.id))
+    );
     if (pendingImages.length === 0) return;
 
     setProcessing(true);
@@ -212,6 +239,7 @@ export function CompressionProcessorOptimized() {
       }
     });
     setImages([]);
+    setSelectedIds(new Set());
   }, [images]);
 
   const pendingCount = images.filter(img => img.status === 'pending' || img.status === 'error').length;
@@ -230,6 +258,19 @@ export function CompressionProcessorOptimized() {
 
       <Dropzone onDrop={onDrop} />
 
+      {images.length > 0 && (
+        <div className="flex items-center gap-2 text-sm">
+          <Checkbox
+            id="select-all-compress"
+            checked={selectedIds.size === images.length && images.length > 0 ? true : selectedIds.size > 0 ? 'indeterminate' : false}
+            onCheckedChange={(checked) => setSelectedIds(checked === true ? new Set(images.map(i => i.id)) : new Set())}
+          />
+          <label htmlFor="select-all-compress" className="text-muted-foreground cursor-pointer">
+            {selectedIds.size === 0 ? 'Select all' : `${selectedIds.size} selected`}
+          </label>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {images.map((image) => (
           <ImageCardEnhanced
@@ -237,6 +278,9 @@ export function CompressionProcessorOptimized() {
             image={image}
             onRemove={removeImage}
             onRetry={image.status === 'error' ? () => resetImageStatus(image.id) : undefined}
+            onDownload={handleDownloadSingle}
+            isSelected={selectedIds.has(image.id)}
+            onToggleSelect={toggleSelect}
           />
         ))}
       </div>
@@ -297,8 +341,12 @@ export function CompressionProcessorOptimized() {
               ) : (
                 <>
                   <Download className="w-4 h-4 mr-2 shrink-0" />
-                  <span className="hidden sm:inline">{pendingCount < images.length ? 'Compress Remaining' : 'Compress & Download'}</span>
-                  <span className="sm:hidden">{pendingCount < images.length ? 'Compress Rest' : 'Compress'}</span>
+                  <span className="hidden sm:inline">
+                    {selectedIds.size > 0 ? `Compress Selected (${selectedIds.size})` : pendingCount < images.length ? 'Compress Remaining' : 'Compress & Download'}
+                  </span>
+                  <span className="sm:hidden">
+                    {selectedIds.size > 0 ? `Compress (${selectedIds.size})` : 'Compress'}
+                  </span>
                 </>
               )}
             </Button>

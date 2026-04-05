@@ -17,6 +17,7 @@ export function Footer() {
     { name: "Metadata Stripper", href: "/metadata" },
     { name: "Image Editor", href: "/edit" },
     { name: "Favicon Generator", href: "/favicon-generator" },
+    { name: "Watermark", href: "/watermark" },
   ];
 
   const resources = [

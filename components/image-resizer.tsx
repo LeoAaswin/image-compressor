@@ -32,15 +32,41 @@ function getImageDims(file: File): Promise<{ w: number; h: number }> {
 
 export function ImageResizer() {
   const [images, setImages] = useState<ResizeImage[]>([]);
-  const [mode, setMode] = useState<ResizeMode>("exact");
-  const [lockAspect, setLockAspect] = useState(true);
-  const [width, setWidth] = useState(1280);
-  const [height, setHeight] = useState(720);
-  const [percent, setPercent] = useState(50);
-  const [maxDim, setMaxDim] = useState(1920);
+  const [mode, setMode] = useState<ResizeMode>(() => {
+    if (typeof window === 'undefined') return 'exact';
+    const saved = localStorage.getItem('opti-resize-mode');
+    return (['exact', 'percent', 'maxdim'] as ResizeMode[]).includes(saved as ResizeMode) ? (saved as ResizeMode) : 'exact';
+  });
+  const [lockAspect, setLockAspect] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('opti-resize-lock') !== 'false';
+  });
+  const [width, setWidth] = useState(() => {
+    if (typeof window === 'undefined') return 1280;
+    return Number(localStorage.getItem('opti-resize-width') ?? 1280);
+  });
+  const [height, setHeight] = useState(() => {
+    if (typeof window === 'undefined') return 720;
+    return Number(localStorage.getItem('opti-resize-height') ?? 720);
+  });
+  const [percent, setPercent] = useState(() => {
+    if (typeof window === 'undefined') return 50;
+    return Number(localStorage.getItem('opti-resize-percent') ?? 50);
+  });
+  const [maxDim, setMaxDim] = useState(() => {
+    if (typeof window === 'undefined') return 1920;
+    return Number(localStorage.getItem('opti-resize-maxdim') ?? 1920);
+  });
   const [processing, setProcessing] = useState(false);
   const imagesRef = useRef<ResizeImage[]>([]);
   imagesRef.current = images;
+
+  useEffect(() => { localStorage.setItem('opti-resize-mode', mode); }, [mode]);
+  useEffect(() => { localStorage.setItem('opti-resize-lock', String(lockAspect)); }, [lockAspect]);
+  useEffect(() => { localStorage.setItem('opti-resize-width', String(width)); }, [width]);
+  useEffect(() => { localStorage.setItem('opti-resize-height', String(height)); }, [height]);
+  useEffect(() => { localStorage.setItem('opti-resize-percent', String(percent)); }, [percent]);
+  useEffect(() => { localStorage.setItem('opti-resize-maxdim', String(maxDim)); }, [maxDim]);
 
   useEffect(() => {
     return () => imagesRef.current.forEach((img) => URL.revokeObjectURL(img.previewUrl));
