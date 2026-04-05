@@ -213,7 +213,7 @@ export function ImageResizer() {
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                className={`py-2 px-2 sm:px-3 rounded-lg border text-xs sm:text-sm font-medium transition-colors leading-tight text-center ${
                   mode === m
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-muted/50 hover:bg-muted border-border text-muted-foreground hover:text-foreground"
@@ -261,7 +261,7 @@ export function ImageResizer() {
 
         {mode === "percent" && (
           <div className="space-y-2">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <Label className="text-xs text-muted-foreground">Scale</Label>
               <span className="text-sm font-semibold text-primary">{percent}%</span>
             </div>
@@ -271,7 +271,7 @@ export function ImageResizer() {
               className="w-full accent-primary"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>1% (tiny)</span><span>100% (original)</span><span>200% (2×)</span>
+              <span>1%</span><span className="hidden sm:inline">100% (original)</span><span>200%</span>
             </div>
           </div>
         )}
@@ -294,15 +294,16 @@ export function ImageResizer() {
 
       {images.length > 0 && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-2">
             <span className="font-semibold">{images.length} image{images.length > 1 ? "s" : ""} ready</span>
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <Button variant="outline" size="sm" onClick={clearAll} disabled={processing}>
                 <Trash2 className="w-4 h-4 mr-1.5" /> Clear All
               </Button>
               <Button size="sm" onClick={processAll} disabled={processing}>
                 <Download className="w-4 h-4 mr-1.5" />
-                {processing ? "Resizing..." : "Resize & Download"}
+                <span className="hidden sm:inline">{processing ? "Resizing..." : "Resize & Download"}</span>
+                <span className="sm:hidden">{processing ? "Resizing..." : "Resize"}</span>
               </Button>
             </div>
           </div>

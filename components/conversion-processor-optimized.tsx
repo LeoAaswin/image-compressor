@@ -360,10 +360,10 @@ export function ConversionProcessorOptimized() {
   const pendingCount = images.filter(img => img.status === 'pending' || img.status === 'error').length;
 
   return (
-    <div className="space-y-8">
-      <div className="prose dark:prose-invert">
-        <h2>Format Conversion</h2>
-        <p className="text-muted-foreground">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-1">
+        <h2 className="text-lg sm:text-xl font-semibold">Format Conversion</h2>
+        <p className="text-sm text-muted-foreground">
           Convert your images to different formats with memory-safe batch processing.
         </p>
       </div>
@@ -382,40 +382,44 @@ export function ConversionProcessorOptimized() {
       </div>
 
       {images.length > 0 && (
-        <div className="space-y-4 bg-card p-6 rounded-lg border">
+        <div className="space-y-4 bg-card p-4 sm:p-6 rounded-lg border">
           {/* Processing Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <FileImage className="w-4 h-4" />
-              <span className="text-muted-foreground">Total:</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <FileImage className="w-3 h-3 shrink-0" /> Total
+              </span>
               <span className="font-medium">{images.length}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-muted-foreground">Completed:</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <div className="w-2.5 h-2.5 bg-green-500 rounded-full shrink-0" /> Completed
+              </span>
               <span className="font-medium">{completedImages}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span className="text-muted-foreground">Processing:</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <div className="w-2.5 h-2.5 bg-blue-500 rounded-full shrink-0" /> Processing
+              </span>
               <span className="font-medium">{processingImages}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-muted-foreground">Errors:</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <div className="w-2.5 h-2.5 bg-red-500 rounded-full shrink-0" /> Errors
+              </span>
               <span className="font-medium">{errorImages}</span>
             </div>
           </div>
 
           {/* File Size Stats */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Original Size:</span>
-              <span className="ml-2 font-medium">{formatFileSize(totalOriginalSize)}</span>
+          <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">Original Size</span>
+              <span className="font-medium">{formatFileSize(totalOriginalSize)}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Converted Size:</span>
-              <span className="ml-2 font-medium">{formatFileSize(totalProcessedSize)}</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">Converted Size</span>
+              <span className="font-medium">{formatFileSize(totalProcessedSize)}</span>
             </div>
           </div>
 
@@ -425,25 +429,30 @@ export function ConversionProcessorOptimized() {
             disabled={processing}
           />
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
             <Button
               variant="destructive"
               onClick={clearAllImages}
               disabled={processing}
+              size="sm"
             >
               Clear All
             </Button>
             <Button
               onClick={processImages}
               disabled={processing || pendingCount === 0}
-              className="min-w-[150px]"
+              size="sm"
+              className="shrink-0"
             >
               {processing ? (
-                `Converting... (${completedImages}/${pendingCount + completedImages})`
+                <span className="truncate max-w-[160px] sm:max-w-none">
+                  Converting... ({completedImages}/{pendingCount + completedImages})
+                </span>
               ) : (
                 <>
-                  <Download className="w-4 h-4 mr-2" />
-                  {pendingCount < images.length ? 'Convert Remaining' : 'Convert & Download'}
+                  <Download className="w-4 h-4 mr-2 shrink-0" />
+                  <span className="hidden sm:inline">{pendingCount < images.length ? 'Convert Remaining' : 'Convert & Download'}</span>
+                  <span className="sm:hidden">{pendingCount < images.length ? 'Convert Rest' : 'Convert'}</span>
                 </>
               )}
             </Button>

@@ -220,10 +220,10 @@ export function CompressionProcessorOptimized() {
   const compressionRatio = totalOriginalSize > 0 ? ((totalOriginalSize - totalProcessedSize) / totalOriginalSize) * 100 : 0;
 
   return (
-    <div className="space-y-8">
-      <div className="prose dark:prose-invert">
-        <h2>Image Compression</h2>
-        <p className="text-muted-foreground">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="space-y-1">
+        <h2 className="text-lg sm:text-xl font-semibold">Image Compression</h2>
+        <p className="text-sm text-muted-foreground">
           Compress your images while maintaining quality. Supports batch processing with memory management.
         </p>
       </div>
@@ -242,24 +242,24 @@ export function CompressionProcessorOptimized() {
       </div>
 
       {images.length > 0 && (
-        <div className="space-y-4 bg-card p-6 rounded-lg border">
+        <div className="space-y-4 bg-card p-4 sm:p-6 rounded-lg border">
           {/* Compression Stats */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Original Size:</span>
-              <span className="ml-2 font-medium">{formatFileSize(totalOriginalSize)}</span>
+          <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">Original Size</span>
+              <span className="font-medium">{formatFileSize(totalOriginalSize)}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Compressed Size:</span>
-              <span className="ml-2 font-medium">{formatFileSize(totalProcessedSize)}</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">Compressed Size</span>
+              <span className="font-medium">{formatFileSize(totalProcessedSize)}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Space Saved:</span>
-              <span className="ml-2 font-medium text-green-600">{compressionRatio.toFixed(1)}%</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">Space Saved</span>
+              <span className="font-medium text-green-600">{compressionRatio.toFixed(1)}%</span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Images:</span>
-              <span className="ml-2 font-medium">{images.length}</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-muted-foreground">Images</span>
+              <span className="font-medium">{images.length}</span>
             </div>
           </div>
 
@@ -275,25 +275,30 @@ export function CompressionProcessorOptimized() {
             />
           </div>
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
             <Button
               variant="destructive"
               onClick={clearAllImages}
               disabled={processing}
+              size="sm"
             >
               Clear All
             </Button>
             <Button
               onClick={processImages}
               disabled={processing || pendingCount === 0}
-              className="min-w-[150px]"
+              size="sm"
+              className="shrink-0"
             >
               {processing ? (
-                `Compressing... (${processedCount}/${pendingCount + processedCount})`
+                <span className="truncate max-w-[160px] sm:max-w-none">
+                  Compressing... ({processedCount}/{pendingCount + processedCount})
+                </span>
               ) : (
                 <>
-                  <Download className="w-4 h-4 mr-2" />
-                  {pendingCount < images.length ? 'Compress Remaining' : 'Compress & Download'}
+                  <Download className="w-4 h-4 mr-2 shrink-0" />
+                  <span className="hidden sm:inline">{pendingCount < images.length ? 'Compress Remaining' : 'Compress & Download'}</span>
+                  <span className="sm:hidden">{pendingCount < images.length ? 'Compress Rest' : 'Compress'}</span>
                 </>
               )}
             </Button>
