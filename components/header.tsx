@@ -143,6 +143,54 @@ export function Header() {
         },
       ],
     },
+    advanced2: {
+      name: 'Create',
+      icon: <Wrench className="w-4 h-4" />,
+      description: 'Creation tools',
+      tools: [
+        {
+          name: 'GIF Maker',
+          href: '/gif',
+          description: 'Create & extract GIFs',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <rect x="2" y="2" width="20" height="20" rx="2" />
+              <path d="M7 12h4M9 10v4" />
+              <path d="M13 10v4M13 12h3" />
+              <path d="M17 10v4" />
+            </svg>
+          ),
+        },
+        {
+          name: 'Collage',
+          href: '/collage',
+          description: 'Combine into grid',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          ),
+        },
+        {
+          name: 'PDF ↔ Image',
+          href: '/pdf',
+          description: 'Convert PDF & images',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          ),
+          popular: true,
+        },
+      ],
+    },
     utilities: {
       name: 'Utilities',
       icon: <Settings className="w-4 h-4" />,
@@ -180,6 +228,58 @@ export function Header() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <path d="M8 11h8M8 15h5" />
+            </svg>
+          ),
+        },
+        {
+          name: 'QR Reader',
+          href: '/qr-reader',
+          description: 'Decode QR codes',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <rect x="3" y="3" width="5" height="5" />
+              <rect x="16" y="3" width="5" height="5" />
+              <rect x="3" y="16" width="5" height="5" />
+              <path d="M21 16h-3v3M21 21v-1M16 21h1" />
+              <rect x="4" y="4" width="3" height="3" fill="currentColor" />
+              <rect x="17" y="4" width="3" height="3" fill="currentColor" />
+              <rect x="4" y="17" width="3" height="3" fill="currentColor" />
+            </svg>
+          ),
+        },
+        {
+          name: 'Upscale',
+          href: '/upscale',
+          description: 'Enlarge images',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <polyline points="15 3 21 3 21 9" />
+              <polyline points="9 21 3 21 3 15" />
+              <line x1="21" y1="3" x2="14" y2="10" />
+              <line x1="3" y1="21" x2="10" y2="14" />
+            </svg>
+          ),
+        },
+        {
+          name: 'Redact',
+          href: '/redact',
+          description: 'Blur & hide regions',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
+          ),
+        },
+        {
+          name: 'Annotate',
+          href: '/annotate',
+          description: 'Draw & label images',
+          icon: (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              <circle cx="5" cy="19" r="1" fill="currentColor" />
             </svg>
           ),
         },

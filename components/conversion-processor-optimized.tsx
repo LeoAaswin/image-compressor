@@ -25,6 +25,7 @@ export function ConversionProcessorOptimized() {
     return localStorage.getItem('opti-format') ?? 'webp';
   });
   const [processing, setProcessing] = useState(false);
+  const [renamePattern, setRenamePattern] = useState('');
   const processingQueue = useRef(new ProcessingQueue());
   const zipRef = useRef<JSZip | null>(null);
 
@@ -173,7 +174,16 @@ export function ConversionProcessorOptimized() {
 
             // Add to ZIP
             if (zipRef.current) {
-              zipRef.current.file(`${baseName}.${outputFormat}`, convertedFile);
+              const idx = pendingImages.indexOf(image) + 1;
+              const date = new Date().toISOString().slice(0, 10);
+              const finalName = renamePattern.trim()
+                ? renamePattern
+                    .replace(/\{name\}/g, baseName)
+                    .replace(/\{n\}/g, String(idx).padStart(2, '0'))
+                    .replace(/\{date\}/g, date)
+                    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+                : baseName;
+              zipRef.current.file(`${finalName}.${outputFormat}`, convertedFile);
             }
 
             processedCount++;
@@ -484,6 +494,18 @@ export function ConversionProcessorOptimized() {
             onChange={setOutputFormat}
             disabled={processing}
           />
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Rename pattern <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <input
+              type="text"
+              value={renamePattern}
+              onChange={(e) => setRenamePattern(e.target.value)}
+              placeholder="e.g. photo_{n}_{date}  •  {name}_converted"
+              className="w-full text-sm px-3 py-1.5 rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <p className="text-xs text-muted-foreground">Use <code className="bg-muted px-1 rounded">{'{name}'}</code> = original name, <code className="bg-muted px-1 rounded">{'{n}'}</code> = number, <code className="bg-muted px-1 rounded">{'{date}'}</code> = today</p>
+          </div>
 
           <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
             <ClearAllButton onConfirm={clearAllImages} disabled={processing} count={images.length} />

@@ -27,6 +27,7 @@ export function CompressionProcessorOptimized() {
   });
   const [processing, setProcessing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
+  const [renamePattern, setRenamePattern] = useState('');
   const processingQueue = useRef(new ProcessingQueue());
   const zipRef = useRef<JSZip | null>(null);
 
@@ -150,8 +151,17 @@ export function CompressionProcessorOptimized() {
             if (zipRef.current) {
               const extension = image.originalFile.name.split('.').pop();
               const rawBase = image.originalFile.name.slice(0, -(extension?.length || 0) - 1);
-              const baseName = rawBase.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
-              zipRef.current.file(`${baseName}-compressed.${extension}`, compressedFile);
+              const safeBase = rawBase.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_');
+              const idx = pendingImages.indexOf(image) + 1;
+              const date = new Date().toISOString().slice(0, 10);
+              const baseName = renamePattern.trim()
+                ? renamePattern
+                    .replace(/\{name\}/g, safeBase)
+                    .replace(/\{n\}/g, String(idx).padStart(2, '0'))
+                    .replace(/\{date\}/g, date)
+                    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+                : `${safeBase}-compressed`;
+              zipRef.current.file(`${baseName}.${extension}`, compressedFile);
             }
 
             successCount++;
@@ -330,6 +340,18 @@ export function CompressionProcessorOptimized() {
               step={1}
               disabled={processing}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm">Rename pattern <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <input
+              type="text"
+              value={renamePattern}
+              onChange={(e) => setRenamePattern(e.target.value)}
+              placeholder="e.g. photo_{n}_{date}  •  {name}_compressed"
+              className="w-full text-sm px-3 py-1.5 rounded-md border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <p className="text-xs text-muted-foreground">Use <code className="bg-muted px-1 rounded">{'{name}'}</code> = original name, <code className="bg-muted px-1 rounded">{'{n}'}</code> = number, <code className="bg-muted px-1 rounded">{'{date}'}</code> = today</p>
           </div>
 
           <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
