@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { trackUpload } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -27,6 +28,7 @@ export function GifProcessor() {
 
   const { getRootProps: getMakerProps, getInputProps: getMakerInput, isDragActive: isMakerDrag } = useDropzone({
     onDrop: (files) => {
+      trackUpload(files);
       files.filter((f) => f.type.startsWith("image/") && f.type !== "image/gif").forEach((file) => {
         const url = URL.createObjectURL(file);
         const img = new Image();
@@ -40,6 +42,7 @@ export function GifProcessor() {
 
   const { getRootProps: getExtractProps, getInputProps: getExtractInput, isDragActive: isExtractDrag } = useDropzone({
     onDrop: async (files) => {
+      trackUpload(files);
       if (!files[0]) return;
       setGifFile(URL.createObjectURL(files[0]));
       setExtractedFrames([]);

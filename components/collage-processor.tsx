@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
+import { trackUpload } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -33,6 +34,7 @@ export function CollageProcessor() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (files) => {
+      trackUpload(files);
       files.forEach((file) => {
         const url = URL.createObjectURL(file);
         const img = new Image();

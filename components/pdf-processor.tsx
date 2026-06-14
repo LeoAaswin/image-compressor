@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { trackUpload } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -28,6 +29,7 @@ export function PdfProcessor() {
 
   const { getRootProps: getPdfProps, getInputProps: getPdfInput, isDragActive: isPdfDrag } = useDropzone({
     onDrop: async (files) => {
+      trackUpload(files);
       if (!files[0]) return;
       setPdfPages([]);
       setConverting(true);
@@ -44,6 +46,7 @@ export function PdfProcessor() {
 
   const { getRootProps: getImgProps, getInputProps: getImgInput, isDragActive: isImgDrag } = useDropzone({
     onDrop: (files) => {
+      trackUpload(files);
       files.forEach((file) => {
         const url = URL.createObjectURL(file);
         const img = new Image();

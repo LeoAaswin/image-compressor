@@ -1,4 +1,23 @@
 import { WatermarkProcessor } from "@/components/watermark-processor";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Image Watermark Tool — Add Text or Image Watermark',
+  description: 'Add text or image watermarks to photos. Control position, opacity, font size, and color. Batch watermark multiple images and download as ZIP. Free, no uploads.',
+  keywords: ['image watermark', 'add watermark to image', 'watermark photos', 'text watermark', 'image watermark tool', 'batch watermark', 'watermark online free', 'photo watermark'],
+  alternates: { canonical: '/watermark' },
+  openGraph: {
+    title: 'Free Image Watermark Tool — OptiPix',
+    description: 'Add text or image watermarks to photos. 9-point positioning, opacity control, batch processing.',
+    url: '/watermark',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Free Image Watermark Tool — OptiPix',
+    description: 'Add text or image watermarks. Batch process and download as ZIP. Free.',
+  },
+};
 
 export default function WatermarkPage() {
   return (

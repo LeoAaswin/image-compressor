@@ -1,6 +1,25 @@
 import { RedactProcessor } from "@/components/redact-processor";
+import type { Metadata } from 'next';
 
-export const metadata = { title: "Blur & Redact" };
+
+
+export const metadata: Metadata = {
+  title: 'Image Redaction Tool — Blur & Pixelate Sensitive Areas',
+  description: 'Blur, pixelate, or black out sensitive regions in images. Protect faces, license plates, and private data before sharing. Free, browser-based, no uploads.',
+  keywords: ['image redaction', 'blur face', 'blur image region', 'pixelate image', 'censor image', 'hide sensitive info', 'blur photo', 'image privacy tool', 'redact photo'],
+  alternates: { canonical: '/redact' },
+  openGraph: {
+    title: 'Image Redaction Tool — OptiPix',
+    description: 'Blur, pixelate, or black out regions in images. Protect faces and sensitive data before sharing.',
+    url: '/redact',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Image Redaction Tool — OptiPix',
+    description: 'Blur or pixelate sensitive areas in photos. Free and private.',
+  },
+};
 
 export default function RedactPage() {
   return (

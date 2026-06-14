@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { trackUpload } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -71,6 +72,7 @@ export function UpscaleProcessor() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (files) => {
+      trackUpload(files);
       files.forEach((file) => {
         const url = URL.createObjectURL(file);
         const img = new Image();

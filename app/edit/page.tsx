@@ -1,4 +1,23 @@
 import { ImageProcessorEditor } from "@/components/image-processor-editor";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Image Editor — Crop Rotate Adjust Brightness Free',
+  description: 'Edit images online: crop with presets, rotate, flip, adjust brightness, contrast, and saturation. Batch editing with ZIP download. 100% browser-based.',
+  keywords: ['image editor online', 'crop image', 'rotate image', 'adjust brightness', 'image contrast', 'image saturation', 'flip image', 'free image editor', 'batch image editor'],
+  alternates: { canonical: '/edit' },
+  openGraph: {
+    title: 'Free Online Image Editor — OptiPix',
+    description: 'Crop, rotate, flip and adjust images online. Social media presets, batch editing, no uploads.',
+    url: '/edit',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Free Online Image Editor — OptiPix',
+    description: 'Crop, rotate, flip, and adjust brightness/contrast. Free, private, no uploads.',
+  },
+};
 
 export default function EditPage() {
   return (

@@ -1,5 +1,24 @@
 import { CompressionProcessorOptimized } from "@/components/compression-processor-optimized";
 import Image from "next/image";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Image Compressor — Reduce File Size Free',
+  description: 'Compress JPEG, PNG, WebP and more without losing quality. Batch process up to 500MB, memory-safe, 100% in your browser. No uploads required.',
+  keywords: ['image compressor', 'compress jpeg', 'compress png', 'compress webp', 'reduce image size', 'batch image compression', 'free image compressor', 'online compressor'],
+  alternates: { canonical: '/compress' },
+  openGraph: {
+    title: 'Free Image Compressor — OptiPix',
+    description: 'Compress images in bulk without quality loss. Supports JPEG, PNG, WebP, HEIC and more. 100% private — no uploads.',
+    url: '/compress',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Free Image Compressor — OptiPix',
+    description: 'Compress images in bulk, browser-side. Supports JPEG, PNG, WebP, HEIC.',
+  },
+};
 
 export default function CompressPage() {
   return (

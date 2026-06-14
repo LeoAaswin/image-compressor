@@ -1,4 +1,23 @@
 import { MetadataTool } from '@/components/metadata-tool';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'EXIF Metadata Viewer & Remover — Strip GPS Data Free',
+  description: 'View and remove EXIF metadata from images. Strip GPS location, camera info, and personal data before sharing. Batch process, 100% private — no uploads.',
+  keywords: ['exif viewer', 'remove exif data', 'strip metadata', 'remove gps from photo', 'image metadata remover', 'exif remover', 'photo privacy', 'metadata stripper'],
+  alternates: { canonical: '/metadata' },
+  openGraph: {
+    title: 'EXIF Metadata Viewer & Remover — OptiPix',
+    description: 'View and strip EXIF data, GPS location, and camera info from images before sharing.',
+    url: '/metadata',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'EXIF Metadata Viewer & Remover — OptiPix',
+    description: 'Remove GPS, camera data and EXIF metadata from photos. Free and private.',
+  },
+};
 
 export default function MetadataPage() {
   return (

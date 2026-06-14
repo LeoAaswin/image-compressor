@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { trackUpload } from "@/lib/utils";
 import jsQR from "jsqr";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ export function QrReader() {
 
   const onDrop = useCallback(
     async (files: File[]) => {
+      trackUpload(files);
       const placeholders: QrResult[] = files.map((f) => ({
         id: Math.random().toString(36).slice(2),
         fileName: f.name,

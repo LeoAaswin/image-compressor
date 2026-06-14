@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
+import { trackUpload } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -30,6 +31,7 @@ export function RedactProcessor() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (files) => {
+      trackUpload(files);
       if (!files[0]) return;
       setFileName(files[0].name);
       const url = URL.createObjectURL(files[0]);

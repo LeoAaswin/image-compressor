@@ -2,6 +2,25 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, Users, Zap, Shield, Clock, Cpu } from "lucide-react";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Free Image Tools — Compress, Convert, Edit & More',
+  description: 'OptiPix offers free browser-based image tools: compress, convert, resize, edit, remove background, add watermarks, and more. No uploads, 100% private.',
+  keywords: ['image tools', 'free image editor', 'image compressor', 'image converter', 'remove background', 'resize image', 'online image tool', 'privacy first'],
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: 'OptiPix — Free Image Tools Suite',
+    description: 'Compress, convert, resize, edit, and more — all free, all in your browser. No uploads, no limits.',
+    url: '/',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'OptiPix — Free Image Tools Suite',
+    description: 'Compress, convert, resize, edit images — all in your browser, 100% private.',
+  },
+};
 
 export default function Home() {
   const stats = [

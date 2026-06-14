@@ -1,6 +1,25 @@
 import { QrReader } from "@/components/qr-reader";
+import type { Metadata } from 'next';
 
-export const metadata = { title: "QR Code Reader" };
+
+
+export const metadata: Metadata = {
+  title: 'QR Code Reader — Decode QR Codes From Images Free',
+  description: 'Upload any image to instantly decode QR codes. Supports multiple QR codes per image. Copy decoded text or open URLs directly. Free, browser-based, no uploads.',
+  keywords: ['qr code reader', 'qr code decoder', 'scan qr code from image', 'qr code scanner', 'decode qr code', 'read qr code online', 'free qr reader'],
+  alternates: { canonical: '/qr-reader' },
+  openGraph: {
+    title: 'QR Code Reader — OptiPix',
+    description: 'Decode QR codes from any image instantly. No camera needed — upload an image to scan.',
+    url: '/qr-reader',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'QR Code Reader — OptiPix',
+    description: 'Decode QR codes from uploaded images. Free, instant, browser-based.',
+  },
+};
 
 export default function QrReaderPage() {
   return (

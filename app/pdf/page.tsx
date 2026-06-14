@@ -1,6 +1,25 @@
 import { PdfProcessor } from "@/components/pdf-processor";
+import type { Metadata } from 'next';
 
-export const metadata = { title: "PDF ↔ Image" };
+
+
+export const metadata: Metadata = {
+  title: 'PDF to Image & Image to PDF Converter Free',
+  description: 'Convert PDF pages to high-quality PNG images, or combine multiple images into a PDF. Supports A4 and fit-to-image page sizes. Free, browser-based, no uploads.',
+  keywords: ['pdf to image', 'image to pdf', 'pdf to png', 'convert pdf to jpg', 'images to pdf', 'pdf converter', 'free pdf to image', 'pdf page to image'],
+  alternates: { canonical: '/pdf' },
+  openGraph: {
+    title: 'PDF ↔ Image Converter — OptiPix',
+    description: 'Convert PDF pages to images or combine images into a PDF. Free, browser-based, no uploads.',
+    url: '/pdf',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PDF ↔ Image Converter — OptiPix',
+    description: 'Convert PDF to images or images to PDF. Free and private.',
+  },
+};
 
 export default function PdfPage() {
   return (

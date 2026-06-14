@@ -1,6 +1,25 @@
 import { AnnotateProcessor } from "@/components/annotate-processor";
+import type { Metadata } from 'next';
 
-export const metadata = { title: "Image Annotator" };
+
+
+export const metadata: Metadata = {
+  title: 'Image Annotator — Add Arrows Text and Shapes Free',
+  description: 'Annotate images with arrows, text labels, rectangles, circles, and freehand drawing. Perfect for screenshots, tutorials, and design feedback. Free, browser-based.',
+  keywords: ['image annotator', 'annotate image', 'draw on image', 'add arrows to image', 'image markup', 'screenshot annotation', 'add text to image', 'free image annotator'],
+  alternates: { canonical: '/annotate' },
+  openGraph: {
+    title: 'Image Annotator — OptiPix',
+    description: 'Draw arrows, add text, shapes and freehand on images. Perfect for screenshots and tutorials.',
+    url: '/annotate',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Image Annotator — OptiPix',
+    description: 'Annotate images with arrows, text and shapes. Free and browser-based.',
+  },
+};
 
 export default function AnnotatePage() {
   return (

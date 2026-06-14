@@ -3,6 +3,25 @@ import { SimpleCounterDisplay } from "@/components/simple-counter-display";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Image Converter — Convert JPG PNG WebP AVIF Free',
+  description: 'Convert images between JPG, PNG, WebP, AVIF, GIF, BMP, TIFF, ICO and SVG. Batch convert with a single click. Free, fast, and private — no uploads.',
+  keywords: ['image converter', 'convert jpg to png', 'convert to webp', 'convert to avif', 'png to jpg', 'jpg to webp', 'batch image converter', 'free image converter'],
+  alternates: { canonical: '/convert' },
+  openGraph: {
+    title: 'Free Image Format Converter — OptiPix',
+    description: 'Convert images between any format — JPG, PNG, WebP, AVIF, SVG and more. Batch processing, no uploads.',
+    url: '/convert',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Free Image Format Converter — OptiPix',
+    description: 'Convert between JPG, PNG, WebP, AVIF, GIF, BMP, ICO and SVG. Free and private.',
+  },
+};
 
 export default function ConvertPage() {
   return (

@@ -1,4 +1,23 @@
 import { ImageResizer } from '@/components/image-resizer';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Image Resizer — Resize Images Online Free',
+  description: 'Resize images by exact pixels, percentage, or max dimension. Batch resize with aspect ratio lock. Free, browser-based, no uploads required.',
+  keywords: ['image resizer', 'resize image online', 'resize jpg', 'resize png', 'bulk image resize', 'resize by percentage', 'aspect ratio resize', 'free image resizer'],
+  alternates: { canonical: '/resize' },
+  openGraph: {
+    title: 'Free Image Resizer — OptiPix',
+    description: 'Resize images by exact size, percentage, or max dimension. Batch processing with aspect ratio lock. No uploads.',
+    url: '/resize',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Free Image Resizer — OptiPix',
+    description: 'Resize images by pixels, percentage, or max dimension. Free and private.',
+  },
+};
 
 export default function ResizePage() {
   return (

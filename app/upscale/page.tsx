@@ -1,6 +1,25 @@
 import { UpscaleProcessor } from "@/components/upscale-processor";
+import type { Metadata } from 'next';
 
-export const metadata = { title: "Image Upscaler" };
+
+
+export const metadata: Metadata = {
+  title: 'Image Upscaler — Enlarge Images 2x 3x 4x Free',
+  description: 'Upscale images 2×, 3×, or 4× using high-quality interpolation with optional sharpening. Batch process multiple images and download as ZIP. Free, browser-based.',
+  keywords: ['image upscaler', 'upscale image', 'enlarge image', 'increase image size', 'image upscaling', '2x upscale', '4x upscale', 'free image upscaler', 'image quality enhancer'],
+  alternates: { canonical: '/upscale' },
+  openGraph: {
+    title: 'Image Upscaler — OptiPix',
+    description: 'Enlarge images 2×, 3×, or 4× with high-quality interpolation and sharpening. Free, no uploads.',
+    url: '/upscale',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Image Upscaler — OptiPix',
+    description: 'Upscale images 2x, 3x, or 4x with optional sharpening. Free and browser-based.',
+  },
+};
 
 export default function UpscalePage() {
   return (

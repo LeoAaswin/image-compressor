@@ -1,4 +1,23 @@
 import { BackgroundRemovalProcessor } from "@/components/background-removal-processor";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Background Remover — Remove Image Background Free',
+  description: 'Remove image backgrounds automatically using AI. Get transparent PNG output instantly. Free to use with rate limiting for fair access.',
+  keywords: ['remove background', 'background remover', 'transparent background', 'remove image background', 'ai background removal', 'png transparent', 'free background remover'],
+  alternates: { canonical: '/remove-background' },
+  openGraph: {
+    title: 'AI Background Remover — OptiPix',
+    description: 'Remove image backgrounds automatically with AI. Transparent PNG output, instant results.',
+    url: '/remove-background',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI Background Remover — OptiPix',
+    description: 'Remove image backgrounds with AI. Free, transparent PNG output.',
+  },
+};
 
 export default function RemoveBackgroundPage() {
   return (

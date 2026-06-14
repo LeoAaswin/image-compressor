@@ -1,6 +1,25 @@
 import { CollageProcessor } from "@/components/collage-processor";
+import type { Metadata } from 'next';
 
-export const metadata = { title: "Collage Maker" };
+
+
+export const metadata: Metadata = {
+  title: 'Collage Maker — Combine Images Into Grid Layout Free',
+  description: 'Create photo collages by combining multiple images into grid layouts (1×2 to 4×2). Customize gap, cell size, and background color. Free, browser-based, no uploads.',
+  keywords: ['collage maker', 'photo collage', 'image grid', 'combine images', 'photo grid maker', 'collage creator', 'free collage maker', 'image collage online'],
+  alternates: { canonical: '/collage' },
+  openGraph: {
+    title: 'Collage Maker — OptiPix',
+    description: 'Combine images into beautiful grid collages. Choose layout, spacing, and background. No uploads.',
+    url: '/collage',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Collage Maker — OptiPix',
+    description: 'Create photo collages with grid layouts. Free and browser-based.',
+  },
+};
 
 export default function CollagePage() {
   return (

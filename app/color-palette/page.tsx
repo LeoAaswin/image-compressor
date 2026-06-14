@@ -1,4 +1,23 @@
 import { ColorPaletteExtractor } from '@/components/color-palette-extractor';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Color Palette Extractor — Extract Colors From Image',
+  description: 'Extract dominant colors from any image. Get hex codes, RGB values, and color frequencies. Export as JSON or image. Free, browser-based, no uploads.',
+  keywords: ['color palette extractor', 'extract colors from image', 'image color picker', 'dominant colors', 'hex color extractor', 'color finder', 'palette generator', 'free color extractor'],
+  alternates: { canonical: '/color-palette' },
+  openGraph: {
+    title: 'Color Palette Extractor — OptiPix',
+    description: 'Extract dominant colors from images instantly. Get hex, RGB values and export palettes.',
+    url: '/color-palette',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Color Palette Extractor — OptiPix',
+    description: 'Extract hex and RGB colors from any image. Free and browser-based.',
+  },
+};
 
 export default function ColorPalettePage() {
   return (

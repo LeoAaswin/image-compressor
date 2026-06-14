@@ -1,4 +1,23 @@
 import { FaviconGenerator } from "@/components/favicon/FaviconGenerator";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Favicon Generator — Create ICO PNG Favicon Free',
+  description: 'Generate favicons in all sizes (16x16 to 512x512) from an image or text. Download .ico file and HTML meta tags. Free, instant, browser-based.',
+  keywords: ['favicon generator', 'create favicon', 'favicon maker', 'favicon from image', 'ico generator', 'favicon sizes', 'apple touch icon', 'free favicon generator'],
+  alternates: { canonical: '/favicon-generator' },
+  openGraph: {
+    title: 'Free Favicon Generator — OptiPix',
+    description: 'Generate favicons in all sizes from image or text. Download .ico, PNGs and ready-to-use HTML meta tags.',
+    url: '/favicon-generator',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Free Favicon Generator — OptiPix',
+    description: 'Create favicons in all sizes from image or text. Free and instant.',
+  },
+};
 
 export default function FaviconGeneratorPage() {
   return (

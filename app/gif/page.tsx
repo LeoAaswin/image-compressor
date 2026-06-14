@@ -1,6 +1,25 @@
 import { GifProcessor } from "@/components/gif-processor";
+import type { Metadata } from 'next';
 
-export const metadata = { title: "GIF Maker" };
+
+
+export const metadata: Metadata = {
+  title: 'GIF Maker — Create Animated GIFs From Images Free',
+  description: 'Create animated GIFs from multiple images. Control frame delay, loop count, and order. Also extract individual frames from existing GIFs. Free, browser-based.',
+  keywords: ['gif maker', 'create gif', 'animated gif maker', 'gif from images', 'gif creator online', 'gif frame extractor', 'make gif free', 'gif animation maker'],
+  alternates: { canonical: '/gif' },
+  openGraph: {
+    title: 'GIF Maker & Frame Extractor — OptiPix',
+    description: 'Create animated GIFs from images or extract frames from existing GIFs. Free, no uploads.',
+    url: '/gif',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'GIF Maker & Frame Extractor — OptiPix',
+    description: 'Make animated GIFs from images. Control speed and loop. Free and browser-based.',
+  },
+};
 
 export default function GifPage() {
   return (
