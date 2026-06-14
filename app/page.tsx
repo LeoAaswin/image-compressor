@@ -162,6 +162,115 @@ export default function Home() {
       ),
       category: 'utilities',
     },
+    {
+      name: 'PDF ↔ Image',
+      href: '/pdf',
+      description: 'Convert PDF pages to images and vice versa',
+      features: ['PDF → PNG/JPG', 'Images → PDF', 'A4 or fit-to-image'],
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+        </svg>
+      ),
+      category: 'utilities',
+      badge: 'New',
+    },
+    {
+      name: 'GIF Maker',
+      href: '/gif',
+      description: 'Create animated GIFs from images',
+      features: ['Create from images', 'Extract frames', 'Control speed & loop'],
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+          <rect x="2" y="2" width="20" height="20" rx="2" />
+          <path d="M8 12h2.5M9.5 10v4M13 10v4M13 12h3M17 10v4" />
+        </svg>
+      ),
+      category: 'utilities',
+      badge: 'New',
+    },
+    {
+      name: 'Collage Maker',
+      href: '/collage',
+      description: 'Combine images into grid layouts',
+      features: ['8 layout presets', 'Custom gap & size', 'PNG download'],
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+      ),
+      category: 'utilities',
+      badge: 'New',
+    },
+    {
+      name: 'Image Upscaler',
+      href: '/upscale',
+      description: 'Enlarge images without quality loss',
+      features: ['2×, 3×, 4× scale', 'Optional sharpening', 'Batch + ZIP'],
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+          <polyline points="15 3 21 3 21 9" />
+          <polyline points="9 21 3 21 3 15" />
+          <line x1="21" y1="3" x2="14" y2="10" />
+          <line x1="3" y1="21" x2="10" y2="14" />
+        </svg>
+      ),
+      category: 'utilities',
+      badge: 'New',
+    },
+    {
+      name: 'Image Annotator',
+      href: '/annotate',
+      description: 'Draw arrows, text and shapes on images',
+      features: ['Pen, arrow, shapes', 'Text labels', 'Undo & download'],
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
+      ),
+      category: 'utilities',
+      badge: 'New',
+    },
+    {
+      name: 'Blur & Redact',
+      href: '/redact',
+      description: 'Blur or hide sensitive regions in images',
+      features: ['Blur, pixelate, black', 'Region selection', 'Preview before save'],
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </svg>
+      ),
+      category: 'utilities',
+      badge: 'New',
+    },
+    {
+      name: 'QR Code Reader',
+      href: '/qr-reader',
+      description: 'Decode QR codes from any image',
+      features: ['Upload & scan', 'Copy decoded text', 'Open URLs directly'],
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
+          <rect x="3" y="3" width="5" height="5" />
+          <rect x="4" y="4" width="3" height="3" fill="currentColor" stroke="none" />
+          <rect x="16" y="3" width="5" height="5" />
+          <rect x="17" y="4" width="3" height="3" fill="currentColor" stroke="none" />
+          <rect x="3" y="16" width="5" height="5" />
+          <rect x="4" y="17" width="3" height="3" fill="currentColor" stroke="none" />
+          <path d="M16 16h2v2h-2zM20 16v2M16 20h2M20 20v-2M20 18h-2" />
+        </svg>
+      ),
+      category: 'utilities',
+      badge: 'New',
+    },
   ];
   return (
     <div className="relative overflow-hidden">
@@ -250,7 +359,12 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {otherTools.map((tool, index) => (
               <Link key={index} href={tool.href} className="group">
-                <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50 hover:-translate-y-1">
+                <div className="bg-card/50 backdrop-blur-sm rounded-xl border p-6 hover:shadow-lg transition-all duration-200 hover:border-primary/50 hover:-translate-y-1 relative overflow-hidden">
+                  {'badge' in tool && tool.badge && (
+                    <div className="absolute top-3 right-3">
+                      <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">{tool.badge}</Badge>
+                    </div>
+                  )}
                   <div className="flex items-center space-x-3 mb-4">
                     <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                       {tool.icon}
