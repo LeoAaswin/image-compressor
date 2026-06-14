@@ -63,6 +63,11 @@ export function BackgroundRemovalProcessor() {
                 body: formData,
             });
 
+            if (response.status === 429) {
+                const data = await response.json();
+                throw new Error(data.error ?? "Rate limit exceeded. Try again later.");
+            }
+
             if (!response.ok) {
                 throw new Error(`Failed to remove background: ${response.statusText}`);
             }
