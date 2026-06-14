@@ -193,6 +193,7 @@ export function UpscaleProcessor() {
             {items.map((item) => (
               <div key={item.id} className="border rounded-xl p-4 flex items-center gap-4">
                 <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={item.resultUrl || item.originalUrl} alt={item.fileName} className="w-full h-full object-contain" />
                 </div>
                 <div className="flex-1 min-w-0">
