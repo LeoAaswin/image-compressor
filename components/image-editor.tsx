@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   RotateCcw, RotateCw, Download, X, Save, Check,
   FlipHorizontal, FlipVertical, RefreshCw, Loader2,
-  Crop as CropIcon, Sliders, FileOutput,
+  Crop as CropIcon, Sliders, FileOutput, Undo2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,6 +38,21 @@ interface SocialPreset {
   w: number;
   h: number;
   ratio: number;
+}
+
+interface EditorSnapshot {
+  workingImgSrc: string;
+  flipH: boolean;
+  flipV: boolean;
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  crop: Crop | undefined;
+  completedCrop: PixelCrop | undefined;
+  aspect: number | undefined;
+  activeAspect: string;
+  outputWidth: number;
+  outputHeight: number;
 }
 
 const ASPECT_PRESETS: AspectPreset[] = [
@@ -88,6 +103,10 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   const [rotating, setRotating] = useState(false);
   const [naturalDims, setNaturalDims] = useState({ w: 0, h: 0 });
 
+  // ── Undo history
+  const historyRef = useRef<EditorSnapshot[]>([]);
+  const [historyLen, setHistoryLen] = useState(0);
+
   // ── Mobile
   const [isMobile, setIsMobile] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>('crop');
@@ -107,6 +126,32 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   const blobUrlsRef       = useRef<Set<string>>(new Set());
   const [workingImgSrc, setWorkingImgSrc] = useState('');
 
+  const pushHistory = useCallback(() => {
+    historyRef.current = [
+      ...historyRef.current.slice(-19),
+      { workingImgSrc, flipH, flipV, brightness, contrast, saturation, crop, completedCrop, aspect, activeAspect, outputWidth, outputHeight },
+    ];
+    setHistoryLen(historyRef.current.length);
+  }, [workingImgSrc, flipH, flipV, brightness, contrast, saturation, crop, completedCrop, aspect, activeAspect, outputWidth, outputHeight]);
+
+  const undo = useCallback(() => {
+    const snap = historyRef.current.pop();
+    if (!snap) return;
+    setHistoryLen(historyRef.current.length);
+    setWorkingImgSrc(snap.workingImgSrc);
+    setFlipH(snap.flipH);
+    setFlipV(snap.flipV);
+    setBrightness(snap.brightness);
+    setContrast(snap.contrast);
+    setSaturation(snap.saturation);
+    setCrop(snap.crop);
+    setCompletedCrop(snap.completedCrop);
+    setAspect(snap.aspect);
+    setActiveAspect(snap.activeAspect);
+    setOutputWidth(snap.outputWidth);
+    setOutputHeight(snap.outputHeight);
+  }, []);
+
   useEffect(() => {
     const url = URL.createObjectURL(image);
     originalImgSrcRef.current = url;
@@ -121,10 +166,16 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   }, [image]);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [onClose, undo]);
 
   const initCrop = useCallback((w: number, h: number, ratio?: number) => {
     const r  = ratio ?? w / h;
@@ -159,6 +210,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
 
   const rotateBy = useCallback(async (deg: number) => {
     if (!imgRef.current || rotating) return;
+    pushHistory();
     setRotating(true);
     try {
       const img  = imgRef.current;
@@ -192,6 +244,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   }, [rotating]);
 
   const handleAspectPreset = useCallback((preset: AspectPreset) => {
+    pushHistory();
     setActiveAspect(preset.label);
     setAspect(preset.value);
     if (!imgRef.current) return;
@@ -204,6 +257,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   }, [initCrop]);
 
   const handleSocialPreset = useCallback((preset: SocialPreset) => {
+    pushHistory();
     setOutputWidth(preset.w);
     setOutputHeight(preset.h);
     setAspect(preset.ratio);
@@ -214,6 +268,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   }, []);
 
   const resetAll = useCallback(() => {
+    pushHistory();
     if (originalImgSrcRef.current && workingImgSrc !== originalImgSrcRef.current) {
       setWorkingImgSrc(originalImgSrcRef.current);
     }
@@ -352,21 +407,23 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
 
         {/* ── Mobile Top Bar ── */}
         <div className="flex items-center justify-between px-3 py-2 bg-zinc-900 border-b border-white/10 shrink-0 h-[44px]">
-          {/* Left: undo/reset + redo placeholder */}
+          {/* Left: undo + close */}
           <div className="flex items-center gap-1">
             <button
-              onClick={resetAll}
-              className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Reset all edits"
+              onClick={undo}
+              disabled={historyLen === 0}
+              className="flex items-center gap-1 p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Undo"
             >
-              <RotateCcw className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
+              <Undo2 style={{ width: 18, height: 18 }} />
+              {historyLen > 0 && <span className="text-[10px] font-mono leading-none">{historyLen}</span>}
             </button>
             <button
               onClick={onClose}
               className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
               aria-label="Close editor"
             >
-              <X className="w-4.5 h-4.5" style={{ width: 18, height: 18 }} />
+              <X style={{ width: 18, height: 18 }} />
             </button>
           </div>
 
@@ -449,8 +506,8 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
                 {[
                   { label: '−90°', icon: <RotateCcw className="w-4 h-4" />, action: () => rotateBy(-90) },
                   { label: '+90°', icon: <RotateCw  className="w-4 h-4" />, action: () => rotateBy(90)  },
-                  { label: 'Flip H', icon: <FlipHorizontal className="w-4 h-4" />, action: () => setFlipH(p => !p), active: flipH },
-                  { label: 'Flip V', icon: <FlipVertical   className="w-4 h-4" />, action: () => setFlipV(p => !p), active: flipV },
+                  { label: 'Flip H', icon: <FlipHorizontal className="w-4 h-4" />, action: () => { pushHistory(); setFlipH(p => !p); }, active: flipH },
+                  { label: 'Flip V', icon: <FlipVertical   className="w-4 h-4" />, action: () => { pushHistory(); setFlipV(p => !p); }, active: flipV },
                 ].map(b => (
                   <button
                     key={b.label}
@@ -502,6 +559,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
                   <Slider
                     value={[value]}
                     onValueChange={([v]) => set(v)}
+                    onValueCommit={() => pushHistory()}
                     min={-100} max={100} step={1}
                     className="[&_[role=slider]]:bg-white [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_[role=slider]]:border-0 [&_[role=slider]]:shadow-md"
                     aria-label={label}
@@ -621,14 +679,25 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
             </span>
           )}
         </div>
-        <Button
-          variant="ghost" size="icon"
-          onClick={onClose}
-          aria-label="Close editor"
-          className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full shrink-0"
-        >
-          <X className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={undo}
+            disabled={historyLen === 0}
+            title="Undo (Ctrl+Z / ⌘Z)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs"
+          >
+            <Undo2 className="w-4 h-4" />
+            {historyLen > 0 && <span className="font-mono tabular-nums">{historyLen}</span>}
+          </button>
+          <Button
+            variant="ghost" size="icon"
+            onClick={onClose}
+            aria-label="Close editor"
+            className="text-zinc-400 hover:text-white hover:bg-white/10 rounded-full"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {/* Desktop: canvas + sidebar */}
@@ -667,11 +736,11 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
                     className="bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white">
                     {rotating ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <RotateCw className="w-3.5 h-3.5 mr-1" />} +90°
                   </Button>
-                  <Button size="sm" onClick={() => setFlipH(p => !p)} variant={flipH ? 'default' : 'outline'}
+                  <Button size="sm" onClick={() => { pushHistory(); setFlipH(p => !p); }} variant={flipH ? 'default' : 'outline'}
                     className={flipH ? '' : 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white'}>
                     <FlipHorizontal className="w-3.5 h-3.5 mr-1" /> Flip H
                   </Button>
-                  <Button size="sm" onClick={() => setFlipV(p => !p)} variant={flipV ? 'default' : 'outline'}
+                  <Button size="sm" onClick={() => { pushHistory(); setFlipV(p => !p); }} variant={flipV ? 'default' : 'outline'}
                     className={flipV ? '' : 'bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700 hover:text-white'}>
                     <FlipVertical className="w-3.5 h-3.5 mr-1" /> Flip V
                   </Button>
@@ -732,7 +801,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
                       )}
                     </div>
                   </div>
-                  <Slider value={[value]} onValueChange={([v]) => set(v)} min={-100} max={100} step={1}
+                  <Slider value={[value]} onValueChange={([v]) => set(v)} onValueCommit={() => pushHistory()} min={-100} max={100} step={1}
                     className="[&_[role=slider]]:bg-zinc-200" aria-label={label} />
                   <div className="flex justify-between text-[10px] text-zinc-600">
                     <span>-100</span><span>0</span><span>+100</span>

@@ -6,9 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Dropzone } from "@/components/dropzone";
-import { Download, Trash2, X, Type, ImageIcon } from "lucide-react";
+import { Download, X, Type, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
+import { MemoryManager } from "@/lib/memory-utils";
+import { ClearAllButton } from "@/components/clear-all-button";
+import { useShortcut } from "@/hooks/use-shortcut";
 
 type WatermarkPosition = "tl" | "tc" | "tr" | "ml" | "mc" | "mr" | "bl" | "bc" | "br";
 
@@ -20,11 +23,24 @@ interface WatermarkImage {
   status: "pending" | "processing" | "done" | "error";
 }
 
-const POSITION_GRID: { pos: WatermarkPosition; label: string }[][] = [
-  [{ pos: "tl", label: "↖" }, { pos: "tc", label: "↑" }, { pos: "tr", label: "↗" }],
-  [{ pos: "ml", label: "←" }, { pos: "mc", label: "·" }, { pos: "mr", label: "→" }],
-  [{ pos: "bl", label: "↙" }, { pos: "bc", label: "↓" }, { pos: "br", label: "↘" }],
+const POSITION_GRID: WatermarkPosition[][] = [
+  ["tl", "tc", "tr"],
+  ["ml", "mc", "mr"],
+  ["bl", "bc", "br"],
 ];
+
+const POSITION_NAMES: Record<WatermarkPosition, string> = {
+  tl: "Top Left",    tc: "Top Center",    tr: "Top Right",
+  ml: "Mid Left",    mc: "Center",        mr: "Mid Right",
+  bl: "Bottom Left", bc: "Bottom Center", br: "Bottom Right",
+};
+
+// Percentage [left, top] for the preview dot — centered on those coords via -translate-x/y-1/2
+const POSITION_COORDS: Record<WatermarkPosition, [string, string]> = {
+  tl: ["18%", "22%"], tc: ["50%", "22%"], tr: ["82%", "22%"],
+  ml: ["18%", "50%"], mc: ["50%", "50%"], mr: ["82%", "50%"],
+  bl: ["18%", "78%"], bc: ["50%", "78%"], br: ["82%", "78%"],
+};
 
 function getWatermarkCoords(
   cw: number,
@@ -204,6 +220,10 @@ export function WatermarkProcessor() {
         const resultUrl = URL.createObjectURL(blob);
         setImages(prev => prev.map(i => i.id === img.id ? { ...i, status: "done", resultUrl } : i));
         ok++;
+
+        if (MemoryManager.shouldShowMemoryWarning()) {
+          toast.warning('Memory usage is over 80%. Consider clearing completed images to free space.');
+        }
       } else {
         setImages(prev => prev.map(i => i.id === img.id ? { ...i, status: "error" } : i));
         fail++;
@@ -221,7 +241,12 @@ export function WatermarkProcessor() {
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       }
     } else if (ok > 1) {
-      const blob = await zip.generateAsync({ type: "blob" });
+      const zipToastId = toast.loading('Packaging ZIP... 0%');
+      const blob = await zip.generateAsync(
+        { type: "blob" },
+        (meta) => toast.loading(`Packaging ZIP... ${Math.round(meta.percent)}%`, { id: zipToastId })
+      );
+      toast.dismiss(zipToastId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url; a.download = "watermarked-images.zip";
@@ -233,6 +258,8 @@ export function WatermarkProcessor() {
     else toast.success(`Successfully watermarked ${ok} image${ok > 1 ? "s" : ""}!`);
     setProcessing(false);
   }, [images, watermarkType, text, wmImageFile, applyWatermark]);
+
+  useShortcut(processAll, processing || images.length === 0);
 
   return (
     <div className="space-y-6">
@@ -337,26 +364,55 @@ export function WatermarkProcessor() {
           />
         </div>
 
-        {/* Position grid */}
+        {/* Position grid + live preview */}
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Position</Label>
-          <div className="inline-grid grid-cols-3 gap-1">
-            {POSITION_GRID.map((row, ri) =>
-              row.map(({ pos, label }) => (
-                <button
-                  key={pos}
-                  onClick={() => setPosition(pos)}
-                  className={`w-10 h-10 rounded-lg border text-base transition-colors ${
-                    position === pos
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted/50 hover:bg-muted border-border text-muted-foreground"
-                  }`}
-                  title={pos}
-                >
-                  {label}
-                </button>
-              ))
-            )}
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">Position</Label>
+            <span className="text-xs font-medium text-primary">{POSITION_NAMES[position]}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            {/* 3×3 grid */}
+            <div className="grid grid-cols-3 gap-1 shrink-0">
+              {POSITION_GRID.map((row) =>
+                row.map((pos) => (
+                  <button
+                    key={pos}
+                    onClick={() => setPosition(pos)}
+                    className={`w-9 h-9 rounded-lg border text-xs font-semibold transition-colors ${
+                      position === pos
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-muted/50 hover:bg-muted border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                    title={POSITION_NAMES[pos]}
+                    aria-label={POSITION_NAMES[pos]}
+                    aria-pressed={position === pos}
+                  >
+                    {pos === position ? "●" : "○"}
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Mini preview */}
+            <div className="relative flex-1 h-[108px] rounded-xl border-2 border-dashed border-border bg-muted/30 overflow-hidden select-none">
+              {/* Faint photo-like stripes */}
+              <div
+                className="absolute inset-0 opacity-[0.07]"
+                style={{ backgroundImage: "repeating-linear-gradient(45deg, currentColor 0, currentColor 1px, transparent 0, transparent 50%)", backgroundSize: "8px 8px" }}
+              />
+              {/* Watermark indicator */}
+              <div
+                className="absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ease-out"
+                style={{ left: POSITION_COORDS[position][0], top: POSITION_COORDS[position][1] }}
+              >
+                <span className="inline-block bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md whitespace-nowrap leading-tight opacity-90">
+                  WM
+                </span>
+              </div>
+              {/* Corner labels for spatial reference */}
+              <span className="absolute top-1.5 left-1.5 text-[8px] text-muted-foreground/40 font-mono leading-none">TL</span>
+              <span className="absolute bottom-1.5 right-1.5 text-[8px] text-muted-foreground/40 font-mono leading-none">BR</span>
+            </div>
           </div>
         </div>
       </div>
@@ -368,10 +424,8 @@ export function WatermarkProcessor() {
           <div className="flex flex-wrap justify-between items-center gap-2">
             <span className="font-semibold">{images.length} image{images.length > 1 ? "s" : ""} ready</span>
             <div className="flex gap-2 shrink-0">
-              <Button variant="outline" size="sm" onClick={clearAll} disabled={processing}>
-                <Trash2 className="w-4 h-4 mr-1.5" /> Clear All
-              </Button>
-              <Button size="sm" onClick={processAll} disabled={processing}>
+              <ClearAllButton onConfirm={clearAll} disabled={processing} count={images.length} />
+              <Button size="sm" onClick={processAll} disabled={processing} title="Apply & Download (Ctrl+Enter / ⌘+Enter)">
                 <Download className="w-4 h-4 mr-1.5 shrink-0" />
                 <span className="hidden sm:inline">{processing ? "Applying..." : "Apply & Download"}</span>
                 <span className="sm:hidden">{processing ? "Applying..." : "Apply"}</span>

@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dropzone } from '@/components/dropzone';
 import { ImageCardEnhanced } from '@/components/image-card-enhanced';
+import { ClearAllButton } from '@/components/clear-all-button';
 import { FormatSelector } from '@/components/format-selector';
 import { ProcessedImage } from '@/lib/types';
 import { MemoryManager, ProcessingQueue, formatFileSize, estimateMemoryUsage } from '@/lib/memory-utils';
 import { MAX_TOTAL_SIZE, IMAGE_FORMATS } from '@/lib/constants';
+import { useShortcut } from '@/hooks/use-shortcut';
 
 
 export function ConversionProcessorOptimized() {
@@ -181,6 +183,10 @@ export function ConversionProcessorOptimized() {
               MemoryManager.cleanupOldestUrls(3);
             }
 
+            if (MemoryManager.shouldShowMemoryWarning()) {
+              toast.warning('Memory usage is over 80%. Consider clearing completed images to free space.');
+            }
+
           } catch (error) {
             errorCount++;
             setImages((prev) =>
@@ -221,7 +227,12 @@ export function ConversionProcessorOptimized() {
           }
         }
       } else if (zipRef.current) {
-        const content = await zipRef.current.generateAsync({ type: 'blob' });
+        const zipToastId = toast.loading('Packaging ZIP... 0%');
+        const content = await zipRef.current.generateAsync(
+          { type: 'blob' },
+          (meta) => toast.loading(`Packaging ZIP... ${Math.round(meta.percent)}%`, { id: zipToastId })
+        );
+        toast.dismiss(zipToastId);
         const downloadUrl = MemoryManager.createObjectURL(content);
         const link = document.createElement('a');
         link.href = downloadUrl;
@@ -386,6 +397,8 @@ export function ConversionProcessorOptimized() {
   const processingImages = images.filter(img => img.status === 'processing').length;
   const pendingCount = images.filter(img => img.status === 'pending' || img.status === 'error').length;
 
+  useShortcut(processImages, processing || pendingCount === 0);
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="space-y-1">
@@ -473,19 +486,13 @@ export function ConversionProcessorOptimized() {
           />
 
           <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
-            <Button
-              variant="destructive"
-              onClick={clearAllImages}
-              disabled={processing}
-              size="sm"
-            >
-              Clear All
-            </Button>
+            <ClearAllButton onConfirm={clearAllImages} disabled={processing} count={images.length} />
             <Button
               onClick={processImages}
               disabled={processing || pendingCount === 0}
               size="sm"
               className="shrink-0"
+              title="Convert & Download (Ctrl+Enter / ⌘+Enter)"
             >
               {processing ? (
                 <span className="truncate max-w-[160px] sm:max-w-none">

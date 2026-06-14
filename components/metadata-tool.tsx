@@ -5,8 +5,11 @@ import { Dropzone } from "@/components/dropzone";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Download, Shield, Trash2, X, FileImage, MapPin, Camera, Info } from "lucide-react";
+import { Download, Shield, X, FileImage, MapPin, Camera, Info } from "lucide-react";
+import { ClearAllButton } from "@/components/clear-all-button";
+import { useShortcut } from "@/hooks/use-shortcut";
 import JSZip from "jszip";
+import { MemoryManager } from "@/lib/memory-utils";
 
 interface ExifData {
   // Camera
@@ -236,10 +239,16 @@ export function MetadataTool() {
             : i
         )
       );
+
+      if (MemoryManager.shouldShowMemoryWarning()) {
+        toast.warning('Memory usage is over 80%. Consider clearing completed images to free space.');
+      }
     }
     setProcessing(false);
     toast.success("Metadata stripped from all images!");
   }, []);
+
+  useShortcut(stripAll, processing || images.length === 0 || images.every((i) => i.strippedStatus === "done"));
 
   const downloadStripped = useCallback(async () => {
     const done = imagesRef.current.filter((i) => i.strippedStatus === "done" && i.strippedBlob);
@@ -261,7 +270,12 @@ export function MetadataTool() {
         const base = img.file.name.replace(/\.[^.]+$/, "");
         zip.file(`${base}-clean.${ext}`, img.strippedBlob!);
       });
-      const blob = await zip.generateAsync({ type: "blob" });
+      const zipToastId = toast.loading('Packaging ZIP... 0%');
+      const blob = await zip.generateAsync(
+        { type: "blob" },
+        (meta) => toast.loading(`Packaging ZIP... ${Math.round(meta.percent)}%`, { id: zipToastId })
+      );
+      toast.dismiss(zipToastId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url; a.download = "stripped-images.zip";
@@ -283,10 +297,8 @@ export function MetadataTool() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="font-semibold">{images.length} image{images.length > 1 ? "s" : ""}</span>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={clearAll} disabled={processing}>
-                <Trash2 className="w-4 h-4 mr-1.5" /> Clear All
-              </Button>
-              <Button size="sm" onClick={stripAll} disabled={processing || allStripped} className="gap-1.5">
+              <ClearAllButton onConfirm={clearAll} disabled={processing} count={images.length} />
+              <Button size="sm" onClick={stripAll} disabled={processing || allStripped} className="gap-1.5" title="Strip All Metadata (Ctrl+Enter / ⌘+Enter)">
                 <Shield className="w-4 h-4" />
                 {processing ? "Stripping…" : allStripped ? "All Stripped" : "Strip All Metadata"}
               </Button>

@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Dropzone } from "@/components/dropzone";
-import { Download, Trash2, Lock, Unlock, X } from "lucide-react";
+import { Download, Lock, Unlock, X } from "lucide-react";
 import { toast } from "sonner";
 import JSZip from "jszip";
+import { MemoryManager } from "@/lib/memory-utils";
+import { ClearAllButton } from "@/components/clear-all-button";
+import { useShortcut } from "@/hooks/use-shortcut";
 
 type ResizeMode = "exact" | "percent" | "maxdim";
 
@@ -174,6 +177,10 @@ export function ImageResizer() {
           prev.map((i) => (i.id === img.id ? { ...i, status: "done" } : i))
         );
         ok++;
+
+        if (MemoryManager.shouldShowMemoryWarning()) {
+          toast.warning('Memory usage is over 80%. Consider clearing completed images to free space.');
+        }
       } else {
         setImages((prev) =>
           prev.map((i) => (i.id === img.id ? { ...i, status: "error" } : i))
@@ -194,7 +201,12 @@ export function ImageResizer() {
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       }
     } else if (ok > 1) {
-      const blob = await zip.generateAsync({ type: "blob" });
+      const zipToastId = toast.loading('Packaging ZIP... 0%');
+      const blob = await zip.generateAsync(
+        { type: "blob" },
+        (meta) => toast.loading(`Packaging ZIP... ${Math.round(meta.percent)}%`, { id: zipToastId })
+      );
+      toast.dismiss(zipToastId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url; a.download = "resized-images.zip";
@@ -206,6 +218,8 @@ export function ImageResizer() {
     else toast.success(`Successfully resized ${ok} image${ok > 1 ? "s" : ""}!`);
     setProcessing(false);
   }, [images, resizeOne]);
+
+  useShortcut(processAll, processing || images.length === 0);
 
   const handleWidthChange = (val: number) => {
     setWidth(val);
@@ -323,10 +337,8 @@ export function ImageResizer() {
           <div className="flex flex-wrap justify-between items-center gap-2">
             <span className="font-semibold">{images.length} image{images.length > 1 ? "s" : ""} ready</span>
             <div className="flex gap-2 shrink-0">
-              <Button variant="outline" size="sm" onClick={clearAll} disabled={processing}>
-                <Trash2 className="w-4 h-4 mr-1.5" /> Clear All
-              </Button>
-              <Button size="sm" onClick={processAll} disabled={processing}>
+              <ClearAllButton onConfirm={clearAll} disabled={processing} count={images.length} />
+              <Button size="sm" onClick={processAll} disabled={processing} title="Resize & Download (Ctrl+Enter / ⌘+Enter)">
                 <Download className="w-4 h-4 mr-1.5" />
                 <span className="hidden sm:inline">{processing ? "Resizing..." : "Resize & Download"}</span>
                 <span className="sm:hidden">{processing ? "Resizing..." : "Resize"}</span>

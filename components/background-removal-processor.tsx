@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useShortcut } from "@/hooks/use-shortcut";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dropzone } from "@/components/dropzone";
@@ -8,6 +9,13 @@ import { Download, Eraser, X, Info } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import { LoadingSpinner } from "./loading-spinner";
+
+function getEstimatedSeconds(bytes: number): number {
+    if (bytes < 500_000)   return 5;
+    if (bytes < 2_000_000) return 10;
+    if (bytes < 5_000_000) return 15;
+    return 20;
+}
 
 interface ProcessedImage {
     originalUrl: string;
@@ -20,6 +28,7 @@ interface ProcessedImage {
 
 export function BackgroundRemovalProcessor() {
     const [image, setImage] = useState<ProcessedImage | null>(null);
+    const [elapsed, setElapsed] = useState(0);
     const imageRef = useRef<ProcessedImage | null>(null);
     imageRef.current = image;
 
@@ -30,6 +39,17 @@ export function BackgroundRemovalProcessor() {
             if (imageRef.current?.processedUrl) URL.revokeObjectURL(imageRef.current.processedUrl);
         };
     }, []);
+
+    // Elapsed timer — runs only while processing
+    useEffect(() => {
+        if (image?.status !== "processing") {
+            setElapsed(0);
+            return;
+        }
+        setElapsed(0);
+        const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+        return () => clearInterval(id);
+    }, [image?.status]);
 
     const handleDrop = useCallback((files: File[]) => {
         if (files.length === 0) return;
@@ -97,6 +117,8 @@ export function BackgroundRemovalProcessor() {
         document.body.removeChild(link);
     }, []);
 
+    useShortcut(removeBackground, !image || image.status === "processing" || image.status === "completed");
+
     const clearImage = useCallback(() => {
         if (imageRef.current?.originalUrl) URL.revokeObjectURL(imageRef.current.originalUrl);
         if (imageRef.current?.processedUrl) URL.revokeObjectURL(imageRef.current.processedUrl);
@@ -149,9 +171,18 @@ export function BackgroundRemovalProcessor() {
                                 </CardHeader>
                                 <CardContent className="flex flex-col items-center justify-center min-h-[300px] p-4 bg-[url('/transparent-bg.png')] bg-repeat relative">
                                     {image.status === "processing" ? (
-                                        <div className="flex flex-col items-center gap-4">
+                                        <div className="flex flex-col items-center gap-5 w-full px-4">
                                             <LoadingSpinner />
-                                            <p className="text-muted-foreground">Removing background...</p>
+                                            <div className="text-center space-y-1">
+                                                <p className="text-sm font-medium">Removing background...</p>
+                                                <p className="text-xs text-muted-foreground tabular-nums">
+                                                    {elapsed}s elapsed · est. ~{getEstimatedSeconds(image.file.size)}s
+                                                </p>
+                                            </div>
+                                            {/* Indeterminate progress bar */}
+                                            <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+                                                <div className="h-full bg-primary rounded-full animate-[progress-indeterminate_1.5s_ease-in-out_infinite]" style={{ width: '40%' }} />
+                                            </div>
                                         </div>
                                     ) : image.status === "completed" && image.processedUrl ? (
                                         <div className="relative w-full h-[300px]">
@@ -170,7 +201,7 @@ export function BackgroundRemovalProcessor() {
                                     ) : (
                                         <div className="text-center space-y-4">
                                             <p className="text-muted-foreground">Ready to process</p>
-                                            <Button onClick={removeBackground} className="w-full">
+                                            <Button onClick={removeBackground} className="w-full" title="Remove Background (Ctrl+Enter / ⌘+Enter)">
                                                 <Eraser className="w-4 h-4 mr-2" />
                                                 Remove Background
                                             </Button>

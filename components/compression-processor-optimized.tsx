@@ -11,9 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dropzone } from '@/components/dropzone';
 import { ImageCardEnhanced } from '@/components/image-card-enhanced';
+import { ClearAllButton } from '@/components/clear-all-button';
 import { ProcessedImage } from '@/lib/types';
 import { MemoryManager, ProcessingQueue, formatFileSize, estimateMemoryUsage } from '@/lib/memory-utils';
 import { MAX_TOTAL_SIZE } from '@/lib/constants';
+import { useShortcut } from '@/hooks/use-shortcut';
 
 
 export function CompressionProcessorOptimized() {
@@ -159,6 +161,10 @@ export function CompressionProcessorOptimized() {
               MemoryManager.cleanupOldestUrls(3);
             }
 
+            if (MemoryManager.shouldShowMemoryWarning()) {
+              toast.warning('Memory usage is over 80%. Consider clearing completed images to free space.');
+            }
+
           } catch (error) {
             errorCount++;
             setImages((prev) =>
@@ -197,7 +203,12 @@ export function CompressionProcessorOptimized() {
           }
         }
       } else if (zipRef.current && successCount > 0) {
-        const content = await zipRef.current.generateAsync({ type: 'blob' });
+        const zipToastId = toast.loading('Packaging ZIP... 0%');
+        const content = await zipRef.current.generateAsync(
+          { type: 'blob' },
+          (meta) => toast.loading(`Packaging ZIP... ${Math.round(meta.percent)}%`, { id: zipToastId })
+        );
+        toast.dismiss(zipToastId);
         const downloadUrl = MemoryManager.createObjectURL(content);
         const link = document.createElement('a');
         link.href = downloadUrl;
@@ -243,6 +254,8 @@ export function CompressionProcessorOptimized() {
   }, [images]);
 
   const pendingCount = images.filter(img => img.status === 'pending' || img.status === 'error').length;
+
+  useShortcut(processImages, processing || pendingCount === 0);
   const totalOriginalSize = images.reduce((sum, img) => sum + img.originalFile.size, 0);
   const totalProcessedSize = images.reduce((sum, img) => sum + img.processedSize, 0);
   const compressionRatio = totalOriginalSize > 0 ? ((totalOriginalSize - totalProcessedSize) / totalOriginalSize) * 100 : 0;
@@ -320,19 +333,13 @@ export function CompressionProcessorOptimized() {
           </div>
 
           <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
-            <Button
-              variant="destructive"
-              onClick={clearAllImages}
-              disabled={processing}
-              size="sm"
-            >
-              Clear All
-            </Button>
+            <ClearAllButton onConfirm={clearAllImages} disabled={processing} count={images.length} />
             <Button
               onClick={processImages}
               disabled={processing || pendingCount === 0}
               size="sm"
               className="shrink-0"
+              title="Compress & Download (Ctrl+Enter / ⌘+Enter)"
             >
               {processing ? (
                 <span className="truncate max-w-[160px] sm:max-w-none">

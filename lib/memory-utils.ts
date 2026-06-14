@@ -4,6 +4,8 @@ export class MemoryManager {
   private static objectUrls = new Map<string, number>(); // url → blob size
   private static maxMemoryUsage = 500 * 1024 * 1024; // 500MB limit
   private static currentMemoryUsage = 0;
+  private static lastWarningTime = 0;
+  private static WARNING_DEBOUNCE_MS = 30_000; // show toast at most once per 30s
 
   static createObjectURL(blob: Blob): string {
     const url = URL.createObjectURL(blob);
@@ -46,6 +48,16 @@ export class MemoryManager {
 
   static isMemoryLimitReached(): boolean {
     return this.currentMemoryUsage >= this.maxMemoryUsage;
+  }
+
+  // Returns true once per debounce window when memory crosses 80%
+  static shouldShowMemoryWarning(): boolean {
+    const { percentage } = this.getMemoryUsage();
+    if (percentage < 80) return false;
+    const now = Date.now();
+    if (now - this.lastWarningTime < this.WARNING_DEBOUNCE_MS) return false;
+    this.lastWarningTime = now;
+    return true;
   }
 
   static cleanupOldestUrls(count: number = 5): void {

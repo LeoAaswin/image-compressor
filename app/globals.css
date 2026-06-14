@@ -337,6 +337,11 @@
   .animate-multi-pulse {
     animation: multi-color-pulse 3s infinite;
   }
+
+  @keyframes progress-indeterminate {
+    0%   { transform: translateX(-150%); }
+    100% { transform: translateX(400%); }
+  }
   
   /* Blue accent text (was red) */
   .text-accent-blue {
