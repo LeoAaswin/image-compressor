@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Download, Trash2, RotateCcw, Minus, Square, Circle, Type, ArrowRight, PenLine } from "lucide-react";
+import { Download, Trash2, RotateCcw, Minus, Square, Circle, Type, ArrowRight, PenLine, Check, X } from "lucide-react";
 
 type Tool = "pen" | "line" | "arrow" | "rect" | "circle" | "text";
 
@@ -20,6 +20,8 @@ interface DrawOp {
   fontSize?: number;
 }
 
+interface TextPending { x: number; y: number; screenX: number; screenY: number }
+
 export function AnnotateProcessor() {
   const [image, setImage] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
@@ -30,9 +32,13 @@ export function AnnotateProcessor() {
   const [ops, setOps] = useState<DrawOp[]>([]);
   const [drawing, setDrawing] = useState(false);
   const [currentOp, setCurrentOp] = useState<DrawOp | null>(null);
+  const [textPending, setTextPending] = useState<TextPending | null>(null);
+  const [textInput, setTextInput] = useState("");
   const displayRef = useRef<HTMLCanvasElement>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (files) => {
@@ -47,12 +53,21 @@ export function AnnotateProcessor() {
     multiple: false,
   });
 
+  // Focus text input when it appears
+  useEffect(() => {
+    if (textPending) {
+      setTimeout(() => textInputRef.current?.focus(), 10);
+    }
+  }, [textPending]);
+
   const getPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = displayRef.current!;
     const rect = canvas.getBoundingClientRect();
     return {
-      x: (e.clientX - rect.left) * (canvas.width / rect.width),
-      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+      canvasX: (e.clientX - rect.left) * (canvas.width / rect.width),
+      canvasY: (e.clientY - rect.top) * (canvas.height / rect.height),
+      screenX: e.clientX - rect.left,
+      screenY: e.clientY - rect.top,
     };
   };
 
@@ -116,28 +131,55 @@ export function AnnotateProcessor() {
 
   useEffect(() => { redraw(); }, [redraw]);
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const p = getPos(e);
-    startRef.current = p;
-    setDrawing(true);
-    if (tool === "text") {
-      const text = window.prompt("Enter text:");
-      if (text) setOps((prev) => [...prev, { tool: "text", color, width: strokeWidth, x1: p.x, y1: p.y, text, fontSize }]);
+  const commitText = () => {
+    if (!textPending || !textInput.trim()) {
+      setTextPending(null);
+      setTextInput("");
       return;
     }
+    setOps((prev) => [...prev, {
+      tool: "text",
+      color,
+      width: strokeWidth,
+      x1: textPending.x,
+      y1: textPending.y,
+      text: textInput.trim(),
+      fontSize,
+    }]);
+    setTextPending(null);
+    setTextInput("");
+  };
+
+  const cancelText = () => {
+    setTextPending(null);
+    setTextInput("");
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (textPending) { commitText(); return; }
+    const { canvasX, canvasY, screenX, screenY } = getPos(e);
+    startRef.current = { x: canvasX, y: canvasY };
+
+    if (tool === "text") {
+      setTextInput("");
+      setTextPending({ x: canvasX, y: canvasY, screenX, screenY });
+      return;
+    }
+
+    setDrawing(true);
     const op: DrawOp = { tool, color, width: strokeWidth };
-    if (tool === "pen") op.points = [p];
-    else { op.x1 = p.x; op.y1 = p.y; op.x2 = p.x; op.y2 = p.y; }
+    if (tool === "pen") op.points = [{ x: canvasX, y: canvasY }];
+    else { op.x1 = canvasX; op.y1 = canvasY; op.x2 = canvasX; op.y2 = canvasY; }
     setCurrentOp(op);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!drawing || !currentOp) return;
-    const p = getPos(e);
+    const { canvasX, canvasY } = getPos(e);
     if (tool === "pen") {
-      setCurrentOp((prev) => prev ? { ...prev, points: [...(prev.points || []), p] } : prev);
+      setCurrentOp((prev) => prev ? { ...prev, points: [...(prev.points || []), { x: canvasX, y: canvasY }] } : prev);
     } else {
-      setCurrentOp((prev) => prev ? { ...prev, x2: p.x, y2: p.y } : prev);
+      setCurrentOp((prev) => prev ? { ...prev, x2: canvasX, y2: canvasY } : prev);
     }
   };
 
@@ -193,14 +235,14 @@ export function AnnotateProcessor() {
           <div className="flex flex-wrap gap-2 items-center justify-between">
             <div className="flex flex-wrap gap-2">
               {tools.map((t) => (
-                <Button key={t.id} size="sm" variant={tool === t.id ? "default" : "outline"} onClick={() => setTool(t.id)} className="gap-1.5">
+                <Button key={t.id} size="sm" variant={tool === t.id ? "default" : "outline"} onClick={() => { setTool(t.id); cancelText(); }} className="gap-1.5">
                   {t.icon}{t.label}
                 </Button>
               ))}
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setOps((p) => p.slice(0, -1))}><RotateCcw className="w-4 h-4 mr-1" />Undo</Button>
-              <Button size="sm" variant="outline" onClick={() => { setImage(null); setOps([]); }}><Trash2 className="w-4 h-4 mr-1" />New</Button>
+              <Button size="sm" variant="outline" onClick={() => { setOps((p) => p.slice(0, -1)); cancelText(); }}><RotateCcw className="w-4 h-4 mr-1" />Undo</Button>
+              <Button size="sm" variant="outline" onClick={() => { setImage(null); setOps([]); cancelText(); }}><Trash2 className="w-4 h-4 mr-1" />New</Button>
               <Button size="sm" onClick={download}><Download className="w-4 h-4 mr-1" />Download</Button>
             </div>
           </div>
@@ -222,14 +264,46 @@ export function AnnotateProcessor() {
             )}
           </div>
 
-          <div className="border rounded-xl overflow-hidden">
+          {tool === "text" && !textPending && (
+            <p className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+              Click anywhere on the image to place text at that position.
+            </p>
+          )}
+
+          {/* Text input panel — shown when user clicks on canvas in text mode */}
+          {textPending && (
+            <div className="flex items-center gap-2 bg-muted/60 border border-border rounded-xl px-3 py-2 shadow-sm">
+              <Type className="w-4 h-4 text-muted-foreground shrink-0" />
+              <input
+                ref={textInputRef}
+                type="text"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitText();
+                  if (e.key === "Escape") cancelText();
+                }}
+                placeholder="Type your text…"
+                className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
+              />
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-500/10" onClick={commitText}>
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={cancelText}>
+                <X className="w-4 h-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground hidden sm:block">Enter ↵ to confirm · Esc to cancel</span>
+            </div>
+          )}
+
+          <div className="border rounded-xl overflow-hidden" ref={wrapperRef}>
             <canvas
               ref={displayRef}
-              className="w-full cursor-crosshair"
+              className={`w-full ${tool === "text" ? "cursor-text" : "cursor-crosshair"}`}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              onMouseLeave={() => { if (!textPending) handleMouseUp(); }}
             />
           </div>
         </div>

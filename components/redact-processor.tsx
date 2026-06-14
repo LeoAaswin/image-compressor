@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Download, Trash2, RotateCcw, Eye, EyeOff } from "lucide-react";
+import { Download, Trash2, RotateCcw, Eye, EyeOff, ScanEye } from "lucide-react";
 
 type RedactMode = "blur" | "pixelate" | "black";
 
@@ -22,7 +22,8 @@ export function RedactProcessor() {
   const [drawing, setDrawing] = useState(false);
   const [current, setCurrent] = useState<Rect | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const displayRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
@@ -37,6 +38,8 @@ export function RedactProcessor() {
         imgRef.current = img;
         setImage(url);
         setRects([]);
+        setPreviewUrl(null);
+        setShowPreview(false);
       };
       img.src = url;
     },
@@ -78,6 +81,12 @@ export function RedactProcessor() {
 
   useEffect(() => { redrawDisplay(); }, [redrawDisplay]);
 
+  // Invalidate preview when regions or settings change
+  useEffect(() => {
+    setPreviewUrl(null);
+    setShowPreview(false);
+  }, [rects, mode, intensity]);
+
   const applyRedaction = (ctx: CanvasRenderingContext2D, r: Rect, img: HTMLImageElement) => {
     if (mode === "black") {
       ctx.fillStyle = "#000000";
@@ -97,7 +106,6 @@ export function RedactProcessor() {
         }
       }
     } else {
-      // blur via downsample/upsample
       const blurCanvas = document.createElement("canvas");
       const scale = Math.max(2, intensity);
       blurCanvas.width = Math.max(1, Math.floor(r.w / scale));
@@ -110,15 +118,34 @@ export function RedactProcessor() {
     }
   };
 
-  const download = () => {
+  const buildResultCanvas = () => {
     const img = imgRef.current;
-    if (!img || rects.length === 0) { toast.error("Draw at least one region first"); return; }
+    if (!img) return null;
     const canvas = document.createElement("canvas");
     canvas.width = img.width;
     canvas.height = img.height;
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(img, 0, 0);
     rects.forEach((r) => applyRedaction(ctx, r, img));
+    return canvas;
+  };
+
+  const generatePreview = () => {
+    if (rects.length === 0) { toast.error("Draw at least one region first"); return; }
+    const canvas = buildResultCanvas();
+    if (!canvas) return;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(blob));
+      setShowPreview(true);
+    }, "image/png");
+  };
+
+  const download = () => {
+    if (rects.length === 0) { toast.error("Draw at least one region first"); return; }
+    const canvas = buildResultCanvas();
+    if (!canvas) return;
     canvas.toBlob((blob) => {
       if (!blob) return;
       const url = URL.createObjectURL(blob);
@@ -152,13 +179,14 @@ export function RedactProcessor() {
                 <Button key={m} size="sm" variant={mode === m ? "default" : "outline"} onClick={() => setMode(m)} className="capitalize">{m}</Button>
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button size="sm" variant="outline" onClick={() => setShowOverlay(!showOverlay)}>
                 {showOverlay ? <Eye className="w-4 h-4 mr-1" /> : <EyeOff className="w-4 h-4 mr-1" />}
                 {showOverlay ? "Hide" : "Show"} Overlay
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setRects([])}><RotateCcw className="w-4 h-4 mr-1" />Clear</Button>
-              <Button size="sm" variant="outline" onClick={() => { setImage(null); setRects([]); }}><Trash2 className="w-4 h-4 mr-1" />New Image</Button>
+              <Button size="sm" variant="outline" onClick={() => { setRects([]); setPreviewUrl(null); setShowPreview(false); }}><RotateCcw className="w-4 h-4 mr-1" />Clear</Button>
+              <Button size="sm" variant="outline" onClick={() => { setImage(null); setRects([]); setPreviewUrl(null); }}><Trash2 className="w-4 h-4 mr-1" />New Image</Button>
+              <Button size="sm" variant="outline" onClick={generatePreview} disabled={rects.length === 0}><ScanEye className="w-4 h-4 mr-1" />Preview</Button>
               <Button size="sm" onClick={download} disabled={rects.length === 0}><Download className="w-4 h-4 mr-1" />Download</Button>
             </div>
           </div>
@@ -193,7 +221,18 @@ export function RedactProcessor() {
           {rects.length > 0 && (
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{rects.length} region{rects.length !== 1 ? "s" : ""} selected</Badge>
-              <span className="text-xs text-muted-foreground">Ready to download with {mode} effect applied</span>
+              <span className="text-xs text-muted-foreground">Click <strong>Preview</strong> to verify, then <strong>Download</strong></span>
+            </div>
+          )}
+
+          {showPreview && previewUrl && (
+            <div className="border rounded-xl overflow-hidden space-y-0">
+              <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b">
+                <p className="text-sm font-medium">Preview — final result with {mode} applied</p>
+                <Button size="sm" variant="ghost" onClick={() => setShowPreview(false)} className="h-7 text-xs">Hide</Button>
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={previewUrl} alt="Redacted preview" className="w-full" />
             </div>
           )}
         </div>
