@@ -26,14 +26,29 @@ export function GifProcessor() {
   const [extractedFrames, setExtractedFrames] = useState<string[]>([]);
   const [gifFile, setGifFile] = useState<string | null>(null);
 
+  const MAX_FRAMES = 50;
+
   const { getRootProps: getMakerProps, getInputProps: getMakerInput, isDragActive: isMakerDrag } = useDropzone({
     onDrop: (files) => {
       trackUpload(files);
-      files.filter((f) => f.type.startsWith("image/") && f.type !== "image/gif").forEach((file) => {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => setFrames((prev) => [...prev, { id: Math.random().toString(36).slice(2), url, img, name: file.name }]);
-        img.src = url;
+      const valid = files.filter((f) => f.type.startsWith("image/") && f.type !== "image/gif");
+      setFrames((prev) => {
+        const slots = MAX_FRAMES - prev.length;
+        if (slots <= 0) {
+          toast.error(`Frame limit reached — max ${MAX_FRAMES} frames per GIF`);
+          return prev;
+        }
+        const allowed = valid.slice(0, slots);
+        if (valid.length > slots) {
+          toast.warning(`Only ${slots} frame${slots !== 1 ? "s" : ""} added — ${MAX_FRAMES} frame limit reached`);
+        }
+        allowed.forEach((file) => {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => setFrames((p) => [...p, { id: Math.random().toString(36).slice(2), url, img, name: file.name }]);
+          img.src = url;
+        });
+        return prev;
       });
     },
     accept: { "image/jpeg": [], "image/png": [], "image/webp": [], "image/bmp": [] },
@@ -111,7 +126,7 @@ export function GifProcessor() {
 
       gif.finish();
       const bytes = gif.bytesView();
-      const blob = new Blob([bytes], { type: "image/gif" });
+      const blob = new Blob([new Uint8Array(bytes)], { type: "image/gif" });
       setGifUrl(URL.createObjectURL(blob));
       toast.success("GIF created!");
     } catch (err) {
@@ -167,7 +182,16 @@ export function GifProcessor() {
 
         {frames.length > 0 && (
           <>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{frames.length} / {MAX_FRAMES} frames</span>
+                {frames.length >= MAX_FRAMES && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">limit reached</span>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground">Hover to reorder or remove</span>
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto rounded-lg border border-border/50 p-2 bg-muted/20">
               {frames.map((frame, i) => (
                 <div key={frame.id} className="relative group">
                   <div className="w-20 h-20 rounded-lg overflow-hidden border border-border">

@@ -62,7 +62,7 @@ export function PdfProcessor() {
     try {
       const arrayBuffer = await file.arrayBuffer();
       const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
       const doc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const pages: PageImage[] = [];
 
@@ -79,8 +79,12 @@ export function PdfProcessor() {
       }
       setPdfPages(pages);
       toast.success(`Converted ${doc.numPages} page${doc.numPages !== 1 ? "s" : ""}`);
-    } catch (err) {
-      toast.error("Failed to convert PDF. Make sure it's not password-protected.");
+    } catch (err: any) {
+      if (err?.name === "PasswordException" || err?.message?.toLowerCase().includes("password")) {
+        toast.error("This PDF is password-protected. Please remove the password and try again.");
+      } else {
+        toast.error("Failed to convert PDF. The file may be corrupted or unsupported.");
+      }
       console.error(err);
     }
   };
