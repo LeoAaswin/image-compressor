@@ -7,6 +7,7 @@ import { Dropzone } from "@/components/dropzone";
 import { ImageCardEnhanced } from "@/components/image-card-enhanced";
 import { ImageEditor } from "@/components/image-editor";
 import { ProcessedImage } from "@/lib/types";
+import { generateThumbnail } from "@/lib/thumbnail-utils";
 
 import { Edit, Download, Trash2, Image as ImageIcon } from "lucide-react";
 import JSZip from "jszip";
@@ -24,6 +25,7 @@ export function ImageProcessorEditor() {
     return () => {
       imagesRef.current.forEach(img => {
         URL.revokeObjectURL(img.previewUrl);
+        if (img.thumbnailUrl) URL.revokeObjectURL(img.thumbnailUrl);
         if (img.processedUrl) URL.revokeObjectURL(img.processedUrl);
       });
     };
@@ -41,6 +43,20 @@ export function ImageProcessorEditor() {
     }));
 
     setImages((prev) => [...prev, ...newImages]);
+
+    newImages.forEach((image) => {
+      generateThumbnail(image.originalFile)
+        .then((thumbnailUrl) => {
+          setImages((prev) =>
+            prev.map((img) =>
+              img.id === image.id ? { ...img, thumbnailUrl } : img
+            )
+          );
+        })
+        .catch(() => {
+          // Thumbnail generation is a perf optimization only — fall back to previewUrl silently
+        });
+    });
   }, []);
 
   const removeImage = useCallback((id: string) => {
@@ -48,6 +64,7 @@ export function ImageProcessorEditor() {
       const image = prev.find((img) => img.id === id);
       if (image) {
         URL.revokeObjectURL(image.previewUrl);
+        if (image.thumbnailUrl) URL.revokeObjectURL(image.thumbnailUrl);
         if (image.processedUrl) URL.revokeObjectURL(image.processedUrl);
       }
       return prev.filter((img) => img.id !== id);
@@ -64,18 +81,21 @@ export function ImageProcessorEditor() {
       if (!editingImage) return;
 
       URL.revokeObjectURL(editingImage.previewUrl);
+      if (editingImage.thumbnailUrl) URL.revokeObjectURL(editingImage.thumbnailUrl);
       if (editingImage.processedUrl)
         URL.revokeObjectURL(editingImage.processedUrl);
 
       const editedPreviewUrl = URL.createObjectURL(editedImage);
+      const editedId = editingImage.id;
 
       setImages((prev) =>
         prev.map((img) =>
-          img.id === editingImage.id
+          img.id === editedId
             ? {
                 ...img,
                 originalFile: editedImage,
                 previewUrl: editedPreviewUrl,
+                thumbnailUrl: undefined,
                 processedUrl: null,
                 processedSize: editedImage.size,
                 status: "edited" as const,
@@ -88,6 +108,18 @@ export function ImageProcessorEditor() {
 
       setEditingImage(null);
       toast.success("Image edited and saved successfully!");
+
+      generateThumbnail(editedImage)
+        .then((thumbnailUrl) => {
+          setImages((prev) =>
+            prev.map((img) =>
+              img.id === editedId ? { ...img, thumbnailUrl } : img
+            )
+          );
+        })
+        .catch(() => {
+          // Thumbnail generation is a perf optimization only — fall back to previewUrl silently
+        });
     },
     [editingImage],
   );
@@ -219,6 +251,7 @@ export function ImageProcessorEditor() {
   const clearAll = () => {
     images.forEach((image) => {
       URL.revokeObjectURL(image.previewUrl);
+      if (image.thumbnailUrl) URL.revokeObjectURL(image.thumbnailUrl);
       if (image.processedUrl) URL.revokeObjectURL(image.processedUrl);
     });
     setImages([]);
@@ -266,10 +299,10 @@ export function ImageProcessorEditor() {
                 />
                 {/*
                  * Action buttons:
-                 * - Desktop: fade in on hover (opacity-0 group-hover:opacity-100)
-                 * - Mobile: always visible (opacity-100 sm:opacity-0 sm:group-hover:opacity-100)
+                 * - Desktop: subtly visible at rest, fully opaque on hover (Edit was fully hidden until hover before, hurting discoverability)
+                 * - Mobile: always visible
                  */}
-                <div className="absolute top-2 left-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-20">
+                <div className="absolute top-2 left-2 flex gap-2 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity z-20">
                   <Button
                     onClick={() => openEditor(image)}
                     size="sm"

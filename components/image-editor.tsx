@@ -13,8 +13,22 @@ import {
   RotateCcw, RotateCw, Download, X, Save, Check,
   FlipHorizontal, FlipVertical, RefreshCw, Loader2,
   Crop as CropIcon, Sliders, FileOutput, Undo2,
+  Plus, Minus, Hand, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+const ZOOM_MIN = 0.1;
+const ZOOM_MAX = 4;
+const ZOOM_STEP = 1.25;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function isTypingTarget(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+}
 
 interface ImageEditorProps {
   image: File;
@@ -119,8 +133,23 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  const imgRef    = useRef<HTMLImageElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // ── Zoom / Pan
+  const [zoom, setZoom] = useState(1);
+  const [isAtFit, setIsAtFit] = useState(true);
+  const [handTool, setHandTool] = useState(false);
+  const [isSpaceHeld, setIsSpaceHeld] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
+  const zoomRef = useRef(zoom);
+  const panStateRef = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+
+  // ── Desktop sidebar
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const imgRef       = useRef<HTMLImageElement>(null);
+  const canvasRef     = useRef<HTMLCanvasElement>(null);
+  const containerRef  = useRef<HTMLDivElement>(null);
 
   const originalImgSrcRef = useRef('');
   const blobUrlsRef       = useRef<Set<string>>(new Set());
@@ -165,33 +194,217 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
     };
   }, [image]);
 
+  const computeFitZoom = useCallback((natW: number, natH: number) => {
+    const el = containerRef.current;
+    if (!el || !natW || !natH) return 1;
+    const pad = 24;
+    const availW = Math.max(50, el.clientWidth - pad);
+    const availH = Math.max(50, el.clientHeight - pad);
+    return Math.min(availW / natW, availH / natH, 1) || 1;
+  }, []);
+
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { onClose(); return; }
+
+      const typing = isTypingTarget(e.target);
+
       if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        if (typing) return;
         e.preventDefault();
         undo();
+        return;
+      }
+
+      if (typing) return;
+
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        setIsSpaceHeld(true);
+        return;
+      }
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setZoom(z => clamp(z * ZOOM_STEP, ZOOM_MIN, ZOOM_MAX));
+        setIsAtFit(false);
+        return;
+      }
+      if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setZoom(z => clamp(z / ZOOM_STEP, ZOOM_MIN, ZOOM_MAX));
+        setIsAtFit(false);
+        return;
+      }
+      if (e.key === '0') {
+        if (naturalDims.w) {
+          e.preventDefault();
+          setZoom(computeFitZoom(naturalDims.w, naturalDims.h));
+          setIsAtFit(true);
+        }
+        return;
+      }
+      if (e.key === '1') {
+        e.preventDefault();
+        setZoom(1);
+        setIsAtFit(false);
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose, undo]);
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') setIsSpaceHeld(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [onClose, undo, naturalDims.w, naturalDims.h, computeFitZoom]);
 
   const initCrop = useCallback((w: number, h: number, ratio?: number) => {
     const r  = ratio ?? w / h;
     const pc = makeAspectCrop({ unit: '%', width: 90 }, r, w, h);
     const px = convertToPixelCrop(pc, w, h);
-    setCrop(px);
+    setCrop(pc);
     setCompletedCrop(px);
   }, []);
 
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
+    const { naturalWidth, naturalHeight } = e.currentTarget;
     setNaturalDims({ w: naturalWidth, h: naturalHeight });
     setOutputWidth(0);
     setOutputHeight(0);
-    initCrop(width, height);
-  }, [initCrop]);
+    const fit = computeFitZoom(naturalWidth, naturalHeight);
+    setZoom(fit);
+    setIsAtFit(true);
+    initCrop(naturalWidth * fit, naturalHeight * fit);
+  }, [initCrop, computeFitZoom]);
+
+  // react-image-crop keeps `crop` (percent-space) as the single source of truth for
+  // where the crop box is. Mirror it in a ref so the resize handler below can reassert
+  // it without depending on the effect re-running.
+  const cropRef = useRef<Crop | undefined>(undefined);
+  useEffect(() => { cropRef.current = crop; }, [crop]);
+
+  // Refit on container resize (sidebar collapse, window resize) while still at "Fit".
+  // When NOT at fit (user has zoomed in past the container), react-image-crop's own
+  // internal reflow can reclamp the crop box against the container's new bounding
+  // rect — deferring one frame and reasserting our own percent-space crop overrides
+  // any such reclamping so the crop region never silently drifts on resize.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !naturalDims.w || !naturalDims.h) return;
+    const ro = new ResizeObserver(() => {
+      if (isAtFit) {
+        setZoom(computeFitZoom(naturalDims.w, naturalDims.h));
+        return;
+      }
+      requestAnimationFrame(() => {
+        if (!imgRef.current || !cropRef.current) return;
+        const px = convertToPixelCrop(cropRef.current, imgRef.current.width, imgRef.current.height);
+        setCrop(cropRef.current);
+        setCompletedCrop(px);
+      });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [naturalDims.w, naturalDims.h, isAtFit, computeFitZoom]);
+
+  // Keep completedCrop (pixel-space) in sync with crop (percent-space) whenever the
+  // rendered image size changes — zoom, refit, or a rotate-triggered reload.
+  useEffect(() => {
+    if (!imgRef.current || !crop) return;
+    const px = convertToPixelCrop(crop, imgRef.current.width, imgRef.current.height);
+    setCompletedCrop(px);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom]);
+
+  // Ctrl/Cmd+wheel zoom — native listener so preventDefault reliably blocks page scroll
+  // (React's onWheel is passive by default and can't reliably preventDefault).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      const factor = Math.exp(-e.deltaY * 0.01);
+      setZoom(z => clamp(z * factor, ZOOM_MIN, ZOOM_MAX));
+      setIsAtFit(false);
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  // Two-finger pinch-to-zoom on touch devices
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let pinchStartDist = 0;
+    let pinchStartZoom = 1;
+
+    const getDist = (touches: TouchList) =>
+      Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchStartDist = getDist(e.touches);
+        pinchStartZoom = zoomRef.current;
+      }
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchStartDist > 0) {
+        e.preventDefault();
+        const ratio = getDist(e.touches) / pinchStartDist;
+        setZoom(clamp(pinchStartZoom * ratio, ZOOM_MIN, ZOOM_MAX));
+        setIsAtFit(false);
+      }
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchStartDist = 0;
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
+
+  const handlePanMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const el = containerRef.current;
+    if (!el) return;
+    panStateRef.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
+    setIsPanning(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isPanning) return;
+    const handleMove = (e: MouseEvent) => {
+      const el = containerRef.current;
+      const start = panStateRef.current;
+      if (!el || !start) return;
+      el.scrollLeft = start.scrollLeft - (e.clientX - start.x);
+      el.scrollTop  = start.scrollTop  - (e.clientY - start.y);
+    };
+    const handleUp = () => { setIsPanning(false); panStateRef.current = null; };
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, [isPanning]);
+
+  const zoomIn  = useCallback(() => { setZoom(z => clamp(z * ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)); setIsAtFit(false); }, []);
+  const zoomOut = useCallback(() => { setZoom(z => clamp(z / ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)); setIsAtFit(false); }, []);
+  const zoomToFit = useCallback(() => {
+    if (!naturalDims.w) return;
+    setZoom(computeFitZoom(naturalDims.w, naturalDims.h));
+    setIsAtFit(true);
+  }, [naturalDims.w, naturalDims.h, computeFitZoom]);
 
   const cropNaturalDims = (() => {
     if (!completedCrop || !imgRef.current || !naturalDims.w) return null;
@@ -353,47 +566,104 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
   }, [drawToCanvas, completedCrop, outputFormat, outputQuality, image.name, onSave]);
 
   const hasAdjustments = brightness !== 0 || contrast !== 0 || saturation !== 0;
+  const panMode = isSpaceHeld || handTool;
+  const zoomPercent = Math.round(zoom * 100);
+
+  // ─────────────────────────────────────────────────
+  //  Zoom control pill (shared)
+  // ─────────────────────────────────────────────────
+  const zoomControls = naturalDims.w > 0 && (
+    <div
+      className={`absolute z-30 flex items-center gap-0.5 rounded-full bg-zinc-900/85 backdrop-blur border border-white/10 px-1.5 py-1 shadow-lg ${
+        isMobile ? 'bottom-3 left-1/2 -translate-x-1/2' : 'bottom-4 left-4'
+      }`}
+    >
+      <button
+        onClick={zoomOut}
+        className="w-7 h-7 flex items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+        aria-label="Zoom out"
+      >
+        <Minus className="w-3.5 h-3.5" />
+      </button>
+      <span className="px-1.5 h-7 flex items-center justify-center text-xs font-mono tabular-nums text-zinc-300 min-w-[3.25rem]">
+        {zoomPercent}%
+      </span>
+      <button
+        onClick={zoomIn}
+        className="w-7 h-7 flex items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+        aria-label="Zoom in"
+      >
+        <Plus className="w-3.5 h-3.5" />
+      </button>
+      <div className="w-px h-4 bg-white/10 mx-0.5" />
+      <button
+        onClick={zoomToFit}
+        title="Fit to screen (0)"
+        className="px-2 h-7 text-[11px] font-medium text-zinc-300 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+      >
+        Fit
+      </button>
+      <button
+        onClick={() => setHandTool(h => !h)}
+        aria-pressed={handTool}
+        title="Hand tool — hold Space to pan temporarily"
+        className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${
+          handTool ? 'bg-primary/30 text-primary' : 'text-zinc-300 hover:text-white hover:bg-white/10'
+        }`}
+      >
+        <Hand className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
 
   // ─────────────────────────────────────────────────
   //  Shared canvas area
   // ─────────────────────────────────────────────────
   const canvasArea = (
     <div
-      className="flex-1 min-h-0 flex items-center justify-center overflow-auto p-3 md:p-6"
+      ref={containerRef}
+      className="flex-1 min-h-0 relative overflow-auto"
       style={{
         backgroundImage: 'repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%)',
         backgroundSize:  '24px 24px',
+        cursor: panMode ? (isPanning ? 'grabbing' : 'grab') : undefined,
       }}
+      onMouseDown={panMode ? handlePanMouseDown : undefined}
     >
-      {workingImgSrc && (
-        <ReactCrop
-          crop={crop}
-          onChange={(_, p) => setCrop(p)}
-          onComplete={c => setCompletedCrop(c)}
-          aspect={aspect}
-          minWidth={10}
-          minHeight={10}
-          keepSelection
-          className="shadow-2xl"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            ref={imgRef}
-            src={workingImgSrc}
-            alt={`Edit preview of ${image.name}`}
-            onLoad={onImageLoad}
-            style={{
-              maxHeight: isMobile ? 'calc(100dvh - 252px)' : 'calc(100vh - 140px)',
-              maxWidth:  '100%',
-              objectFit: 'contain',
-              display:   'block',
-              transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
-              filter:    cssFilter,
-              transition: 'filter 0.15s, transform 0.15s',
-            }}
-          />
-        </ReactCrop>
-      )}
+      <div className="min-w-full min-h-full flex items-center justify-center p-3 md:p-6">
+        {workingImgSrc && (
+          <ReactCrop
+            crop={crop}
+            onChange={(_, p) => setCrop(p)}
+            onComplete={c => setCompletedCrop(c)}
+            aspect={aspect}
+            minWidth={10}
+            minHeight={10}
+            keepSelection
+            disabled={panMode}
+            className="shadow-2xl"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={imgRef}
+              src={workingImgSrc}
+              alt={`Edit preview of ${image.name}`}
+              onLoad={onImageLoad}
+              draggable={false}
+              style={{
+                ...(naturalDims.w
+                  ? { width: naturalDims.w * zoom, height: naturalDims.h * zoom }
+                  : { maxWidth: '100%', maxHeight: isMobile ? 'calc(100dvh - 252px)' : 'calc(100vh - 140px)' }),
+                display:   'block',
+                transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`,
+                filter:    cssFilter,
+                transition: isPanning ? 'none' : 'filter 0.15s, transform 0.15s',
+              }}
+            />
+          </ReactCrop>
+        )}
+      </div>
+      {zoomControls}
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );
@@ -689,6 +959,13 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
             <Undo2 className="w-4 h-4" />
             {historyLen > 0 && <span className="font-mono tabular-nums">{historyLen}</span>}
           </button>
+          <button
+            onClick={() => setSidebarCollapsed(c => !c)}
+            title={sidebarCollapsed ? 'Show panel' : 'Hide panel — more room for the canvas'}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors text-xs"
+          >
+            {sidebarCollapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </button>
           <Button
             variant="ghost" size="icon"
             onClick={onClose}
@@ -701,12 +978,23 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
       </div>
 
       {/* Desktop: canvas + sidebar */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
 
         {/* Canvas */}
         {canvasArea}
 
+        {sidebarCollapsed && (
+          <button
+            onClick={() => setSidebarCollapsed(false)}
+            title="Show panel"
+            className="absolute top-1/2 right-0 -translate-y-1/2 z-30 flex items-center justify-center w-6 h-14 rounded-l-lg bg-zinc-900 border border-white/10 border-r-0 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+
         {/* Desktop Right Sidebar */}
+        {!sidebarCollapsed && (
         <div className="w-72 bg-zinc-900 border-l border-white/10 flex flex-col overflow-hidden shrink-0">
           <Tabs defaultValue="crop" className="flex flex-col flex-1 overflow-hidden">
 
@@ -904,6 +1192,7 @@ export function ImageEditor({ image, onSave, onClose }: ImageEditorProps) {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

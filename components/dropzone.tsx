@@ -25,9 +25,13 @@ export function Dropzone({ onDrop }: DropzoneProps) {
     if (heicFiles.length > 0) {
       toast.info(`Converting ${heicFiles.length} HEIC file${heicFiles.length > 1 ? 's' : ''} to JPEG...`);
     }
+    const showLoading = acceptedFiles.length > 1;
+    if (showLoading) {
+      toast.loading(`Processing ${acceptedFiles.length} images...`, { id: 'batch-import' });
+    }
     try {
       const normalized = await normalizeImageFiles(acceptedFiles);
-      
+
       // Track stats in the background (fire-and-forget, non-blocking)
       const totalSize = acceptedFiles.reduce((acc, file) => acc + file.size, 0);
       fetch('/api/stats', {
@@ -35,10 +39,14 @@ export function Dropzone({ onDrop }: DropzoneProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filesCount: acceptedFiles.length, bytesCount: totalSize })
       }).catch(console.error);
-      
+
       onDrop(normalized);
+      if (showLoading) {
+        toast.success(`${normalized.length} image${normalized.length > 1 ? 's' : ''} added`, { id: 'batch-import' });
+      }
     } catch (err) {
       console.error('HEIC conversion error:', err);
+      if (showLoading) toast.dismiss('batch-import');
       toast.error('Failed to convert HEIC file. Please check the browser console for details.');
     }
   }, [onDrop]);

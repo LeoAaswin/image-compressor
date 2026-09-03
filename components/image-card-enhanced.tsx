@@ -146,7 +146,7 @@ export function ImageCardEnhanced({
             {/* BEFORE — original clipped to left side */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={image.previewUrl}
+              src={image.thumbnailUrl || image.previewUrl}
               alt={`${image.originalFile.name} original`}
               className="absolute inset-0 w-full h-full object-cover"
               style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
@@ -191,7 +191,7 @@ export function ImageCardEnhanced({
         ) : (
           <>
             <Image
-              src={image.processedUrl || image.previewUrl}
+              src={image.processedUrl || image.thumbnailUrl || image.previewUrl}
               alt={image.originalFile.name}
               width={400}
               height={400}
